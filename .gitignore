@@ -1,0 +1,8 @@
+miniconda*
+Makefile
+environment.yml
+run.sh
+.ipynb*
+*.json
+*.pyc
+
