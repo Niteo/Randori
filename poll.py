@@ -24,6 +24,24 @@ class QuestionStruct:
     
     def addRootQuestion(self, question):
         self.root = question;
+        
+    def __str__(self):
+        toRet = str(self.root)
+        current = self.root
+        
+        toPop = list(self.root.children)
+        loop=True
+        while(loop):
+            nextQ = toPop.pop(0)
+            toRet += str(nextQ)
+            
+            if(len(nextQ.children)>0):
+                toPop.append(list(nextQ.children))
+            
+            if(len(toPop)==0):
+                loop=False
+
+        return toRet
 
 
 # In[4]:
@@ -40,6 +58,7 @@ class Question:
         if addsToOne(answers):
             self.answers = answers
             self.questionText = text
+            self.children = []
 
     def addAnswer(self, answer):
         self.answers.append(answer)
@@ -52,6 +71,14 @@ class Question:
     
     def removeFollowUpQuestion(self, question):
         self.children.pop(question, None)
+        
+    def __str__(self):
+        toRet = 'Question: ' + self.questionText + '\n'
+        toRet += '(Answer, Probability) : \n'
+        for (ans, prob) in self.answers:
+            toRet += '    ('+ans+', '+str(prob.numerator)+'/'+str(prob.denominator)+')\n'
+        
+        return toRet
         
 
 
@@ -74,7 +101,9 @@ class ConditionalQuestion(Question):
     conditions = {}
     
     def __init__(self, text, answers):
-        Question(text, answers)
+        self.questionText = text
+        self.answers = answers
+        self.children = []
         self.conditions = {}
     
     def addCondition(self, cond):
@@ -119,7 +148,7 @@ def testInheritance():
 def testAddCondition():
     # Test add condition
     global rq, fq
-    rq= RootQuestion('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
+    rq = RootQuestion('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
     fq = ConditionalQuestion('Question', [('d', Fraction(1,3)), ('e', Fraction(1,3)), ('f', Fraction(1,3))])
     fq.addCondition((rq, 'b'))
     
@@ -131,9 +160,6 @@ def testAddCondition():
     fq.addCondition((rq, 'doesnt exist'))
     assert len(fq.conditions[rq])==1
     
-    #Cleanup
-    rq=fq=qs=None
-
     
 def testRemoveCondition():
     global rq, fq
@@ -152,10 +178,7 @@ def testRemoveCondition():
     # Test remove from empty
     fq.removeCondition((rq, 'b'))
     assert len(fq.conditions.keys())==0
-    
-    #Cleanup
-    rq=fq=qs=None
-    
+
 def testSetTruth():
     global rq
     rq = RootQuestion('','')
@@ -163,9 +186,6 @@ def testSetTruth():
     assert rq.truth!=999
     rq.setTruth(10)
     assert rq.truth==10
-    
-    #Cleanup
-    rq=fq=qs=None
     
 def testStruct():
     global qs, rq, fq
@@ -180,8 +200,18 @@ def testStruct():
     rq.addFollowUpQuestion(fq)
     fq.addCondition((rq, 'b'))
     
-    #Cleanup
-    rq=fq=qs=None
+def testTraverse():
+    global qs, rq, fq
+    
+    qs = QuestionStruct()
+    rq= RootQuestion('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
+    qs.addRootQuestion(rq)
+    rq.addFollowUpQuestion(ConditionalQuestion('Question 2', [('d', Fraction(1,2)), ('e', Fraction(1,2))]))
+    rq.addFollowUpQuestion(ConditionalQuestion('Question 3', [('f', Fraction(1,2)), ('g', Fraction(1,2))]))
+    rq.addFollowUpQuestion(ConditionalQuestion('Question 4', [('h', Fraction(1,2)), ('i', Fraction(1,2))]))
+    
+    assert len(rq.children)==3
+    assert str(qs)=='Question: Root\n(Answer, Probability) : \n    (a, 1/3)\n    (b, 1/3)\n    (c, 1/3)\nQuestion: Question 2\n(Answer, Probability) : \n    (d, 1/2)\n    (e, 1/2)\nQuestion: Question 3\n(Answer, Probability) : \n    (f, 1/2)\n    (g, 1/2)\nQuestion: Question 4\n(Answer, Probability) : \n    (h, 1/2)\n    (i, 1/2)\n'
 
 
 # In[8]:
@@ -192,4 +222,5 @@ testAddCondition()
 testRemoveCondition()
 testSetTruth()
 testStruct()
+testTraverse()
 
