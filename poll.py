@@ -1,57 +1,65 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import unittest
+import json
 from fractions import Fraction
-
-
-# In[2]:
-
 
 def addsToOne(probabilities):
     testFrac= sum([prob for (_,prob) in probabilities])
     return testFrac.denominator == 1 and testFrac.numerator == 1
 
-
-# In[3]:
-
-
-class QuestionStruct:
-    root = None
+class Poll:
+    roots = []
+    children = []
+    paths = []
     
-    def addRootQuestion(self, question):
-        self.root = question;
+    def __init__(self):
+        self.roots = [] #(Question, factor representing the initial 'coinflip')
+        self.children = [] #Question
+        self.paths = [] # (Root, alt, child) 
+    
+    def addRoot(self, question, coinflip):
+        self.roots.append((question, coinflip))
+        
+    def addChild(self, question):
+        self.children.append(question)
+        
+    def addPath(self, root, alt, child):
+        if(alt in root.getAnswers()):
+            self.paths.append((root, alt, child))
+            
+    def removePath(self, root, alt, child):
+        if((root, alt, child) in self.paths):
+            self.paths.remove((root, alt, child))
         
     def __str__(self):
-        toRet = str(self.root)
-        current = self.root
+        return str(self.toJSON())
+    
+    def toJSON(self):
+        (question, truth) = map(list, zip(*self.roots)) #Unzip the tuples into separate lists        
         
-        toPop = list(self.root.children)
-        loop=True
-        while(loop):
-            nextQ = toPop.pop(0)
-            toRet += str(nextQ)
-            
-            if(len(nextQ.children)>0):
-                toPop.append(list(nextQ.children))
-            
-            if(len(toPop)==0):
-                loop=False
-
-        return toRet
-
-
-# In[4]:
-
+        # Generate unique ids only for use in JSON
+        count = 0
+        questions = question + self.children
+        
+        for q in questions:
+            q.setQid(count)
+            count+=1
+        
+        return {
+            'roots':map(lambda q: q.toJSON(), question),
+            'children':map(lambda q: q.toJSON(), self.children),
+            'paths':map(lambda (parent, alt, child): (parent.qid, alt, child.qid), self.paths), 
+            'truth':map(lambda x: str(x), truth)
+            }
+        
 
 class Question:
     # answer: (string, probability)
     answers = []
     questionText = ''
-    children = []
+    qid = None
 
     def __init__(self, text, answers):
         
@@ -65,162 +73,97 @@ class Question:
         
     def removeAnswer(self, answer):
         self.answers.pop(answer, None)
-    
-    def addFollowUpQuestion(self, question, conditional=None):
-        self.children.append(question)
-    
-    def removeFollowUpQuestion(self, question):
-        self.children.pop(question, None)
         
-    def __str__(self):
-        toRet = 'Question: ' + self.questionText + '\n'
-        toRet += '(Answer, Probability) : \n'
-        for (ans, prob) in self.answers:
-            toRet += '    ('+ans+', '+str(prob.numerator)+'/'+str(prob.denominator)+')\n'
+    def getAnswers(self):
+        (alts, probabilities) = map(list, zip(*self.answers))
+        return alts
+    
+    def setQid(self, qid):
+        self.qid = qid
+    
+    def toJSON(self):
+        (alts, probability) = map(list, zip(*self.answers))
+        return {'question': self.questionText, 
+                'answers':alts,
+                'probability':map(lambda x: str(x),probability)
+               }
         
-        return toRet
+
+class Test(unittest.TestCase):
+    def testAddCondition(self):
+        # Test add condition
+        poll = Poll()
+        rq = Question('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
+        fq = Question('Question', [('d', Fraction(1,3)), ('e', Fraction(1,3)), ('f', Fraction(1,3))])
         
+        poll.addRoot(rq, Fraction(1,2))
+        poll.addChild(fq)
+        poll.addPath(rq, 'b', fq)
 
+        assert map(lambda x: rq in x, poll.paths)
+        assert map(lambda x: 'b' in x, poll.paths)
+        assert len(poll.paths)==1
 
-# In[5]:
+        # Test that conditions without existing answers aren't added
+        poll.addPath(rq, 'doesnt exist', fq)
+        assert len(poll.paths)==1  
 
-
-class RootQuestion(Question):
-    truth = 50
-
-    def setTruth(self, t):
-        if(t>= 0 and t<=100):
-            self.truth = t
-
-
-# In[6]:
-
-
-class ConditionalQuestion(Question):
-    # Parent : answer alts
-    conditions = {}
-    
-    def __init__(self, text, answers):
-        self.questionText = text
-        self.answers = answers
-        self.children = []
-        self.conditions = {}
-    
-    def addCondition(self, cond):
-        (parent, answer) = cond
+    def testRemoveCondition(self):
+        poll = Poll()
+        rq = Question('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
+        fq = Question('Question', [('d', Fraction(1,3)), ('e', Fraction(1,3)), ('f', Fraction(1,3))])
         
-        # Only add if answer exists, don't match probability
-        if(answer in [ans for (ans,prob) in parent.answers]):
-            # Check if list already is created
-            try:
-                answers = self.conditions[parent]
-                if(answer not in answers):
-                    self.conditions[parent].append(answer)
-            except:
-                self.conditions[parent]=[answer]
+        poll.addRoot(rq, Fraction(1,2))
+        poll.addChild(fq)
+        poll.addPath(rq, 'b', fq)
+
+        assert len(poll.paths)==1
+
+        # Test remove condition
+        poll.removePath(rq, 'b', fq)
+        assert (rq,'b', fq) not in poll.paths
+        assert len(poll.paths)==0
+
+
+        # Test remove from empty
+        poll.removePath(rq, 'b', fq)
+        assert len(poll.paths)==0
         
-    def removeCondition(self, c):
-        (parent, answer) = c
-        #Check that parent exist before accessing
-        if(parent in self.conditions):
-            #Get the list of answers that trigger the question
-            answers = self.conditions[parent]
-            if(answer in answers):
-                answers.remove(answer)
-            # Remove key if no follow-ups exist
-            if len(answers)==0:
-                self.conditions.pop(parent)
+    def testPollStruct(self):
+        poll = Poll()
+        rq = Question('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
+        fq = Question('Question', [('d', Fraction(1,3)), ('e', Fraction(1,3)), ('f', Fraction(1,3))])
 
+        assert Poll.roots == []
+        poll.addRoot(rq, Fraction(1,2))
+        assert lambda (x, y): x in Poll.roots
+        
+        poll.addChild(fq)
+        poll.addPath(rq, 'b', fq)
 
-# In[7]:
-
-
-# Test cases
-rq = None
-fq = None
-cq = None
-qs = None
-
-def testInheritance():
-    assert issubclass(RootQuestion, Question)
-    assert issubclass(ConditionalQuestion, Question)
-    
-def testAddCondition():
-    # Test add condition
-    global rq, fq
-    rq = RootQuestion('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
-    fq = ConditionalQuestion('Question', [('d', Fraction(1,3)), ('e', Fraction(1,3)), ('f', Fraction(1,3))])
-    fq.addCondition((rq, 'b'))
-    
-    assert rq in fq.conditions.keys()
-    assert 'b' in fq.conditions[rq]
-    assert len(fq.conditions[rq])==1
-
-    # Test that conditions without existing answers aren't added
-    fq.addCondition((rq, 'doesnt exist'))
-    assert len(fq.conditions[rq])==1
-    
-    
-def testRemoveCondition():
-    global rq, fq
-    rq = RootQuestion('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
-    fq = ConditionalQuestion('Question', [('d', Fraction(1,3)), ('e', Fraction(1,3)), ('f', Fraction(1,3))])
-    fq.addCondition((rq, 'b'))
-    assert len(fq.conditions[rq])==1
-    assert len(fq.conditions.keys())==1
-    
-    # Test remove condition
-    fq.removeCondition((rq, 'b'))
-    assert rq not in fq.conditions.keys()
-    assert len(fq.conditions.keys())==0
-    
-
-    # Test remove from empty
-    fq.removeCondition((rq, 'b'))
-    assert len(fq.conditions.keys())==0
-
-def testSetTruth():
-    global rq
-    rq = RootQuestion('','')
-    rq.setTruth(999)
-    assert rq.truth!=999
-    rq.setTruth(10)
-    assert rq.truth==10
-    
-def testStruct():
-    global qs, rq, fq
-    qs = QuestionStruct()
-    rq = RootQuestion('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
-    fq = ConditionalQuestion('Question', [('d', Fraction(1,3)), ('e', Fraction(1,3)), ('f', Fraction(1,3))])
-    
-    assert qs.root == None
-    qs.addRootQuestion(rq)
-    assert qs.root == rq
-
-    rq.addFollowUpQuestion(fq)
-    fq.addCondition((rq, 'b'))
-    
-def testTraverse():
-    global qs, rq, fq
-    
-    qs = QuestionStruct()
-    rq= RootQuestion('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
-    qs.addRootQuestion(rq)
-    rq.addFollowUpQuestion(ConditionalQuestion('Question 2', [('d', Fraction(1,2)), ('e', Fraction(1,2))]))
-    rq.addFollowUpQuestion(ConditionalQuestion('Question 3', [('f', Fraction(1,2)), ('g', Fraction(1,2))]))
-    rq.addFollowUpQuestion(ConditionalQuestion('Question 4', [('h', Fraction(1,2)), ('i', Fraction(1,2))]))
-    
-    assert len(rq.children)==3
-    assert str(qs)=='Question: Root\n(Answer, Probability) : \n    (a, 1/3)\n    (b, 1/3)\n    (c, 1/3)\nQuestion: Question 2\n(Answer, Probability) : \n    (d, 1/2)\n    (e, 1/2)\nQuestion: Question 3\n(Answer, Probability) : \n    (f, 1/2)\n    (g, 1/2)\nQuestion: Question 4\n(Answer, Probability) : \n    (h, 1/2)\n    (i, 1/2)\n'
-
-
-# In[8]:
-
-
-testInheritance()
-testAddCondition()
-testRemoveCondition()
-testSetTruth()
-testStruct()
-testTraverse()
+    def testTraverse(self):
+        poll = Poll()
+        rq= Question('Root',[('a', Fraction(1,3)), ('b', Fraction(1,3)), ('c', Fraction(1,3))])
+        fqa=Question('Question 2', [('d', Fraction(1,2)), ('e', Fraction(1,2))])
+        fqb=Question('Question 3', [('f', Fraction(1,2)), ('g', Fraction(1,2))])
+        fqc=Question('Question 4', [('h', Fraction(1,2)), ('i', Fraction(1,2))])
+        poll.addRoot(rq, Fraction(1,2))
+        
+        poll.addChild(fqa)
+        poll.addChild(fqb)
+        poll.addChild(fqc)
+        
+        poll.addPath(rq, 'a', fqa)
+        poll.addPath(rq, 'b',fqb)
+        poll.addPath(rq, 'c',fqc)
+        
+        assert len(poll.children)==3
+        json = poll.toJSON()
+        assert len(json['paths'])==3
+        assert 'a' in map(lambda (x,y,z): y,json['paths'])
+        assert 'b' in map(lambda (x,y,z): y,json['paths'])
+        assert 'c' in map(lambda (x,y,z): y,json['paths'])
+        assert not 'd' in map(lambda (x,y,z): y,json['paths'])
+        
+unittest.main(argv=[''], verbosity=2, exit=False)
 
