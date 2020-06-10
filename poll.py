@@ -36,7 +36,7 @@ class Poll:
     def __str__(self):
         return str(self.toJSON())
     
-    def toJSON(self):
+    def toDict(self):
         (question, truth) = map(list, zip(*self.roots)) #Unzip the tuples into separate lists        
         
         # Generate unique ids only for use in JSON
@@ -47,13 +47,17 @@ class Poll:
             q.setQid(count)
             count+=1
         
-        return {
-            'roots':map(lambda q: q.toJSON(), question),
-            'children':map(lambda q: q.toJSON(), self.children),
+        structure = {
+            'roots':map(lambda q: q.toDict(), question),
+            'children':map(lambda q: q.toDict(), self.children),
             'paths':map(lambda (parent, alt, child): (parent.qid, alt, child.qid), self.paths), 
             'truth':map(lambda x: str(x), truth)
             }
         
+        return structure
+    
+    def toJSON(self):
+        return json.dumps(self.toDict())
 
 class Question:
     # answer: (string, probability)
@@ -81,13 +85,12 @@ class Question:
     def setQid(self, qid):
         self.qid = qid
     
-    def toJSON(self):
+    def toDict(self):
         (alts, probability) = map(list, zip(*self.answers))
         return {'question': self.questionText, 
                 'answers':alts,
                 'probability':map(lambda x: str(x),probability)
                }
-        
 
 class Test(unittest.TestCase):
     def testAddCondition(self):
@@ -158,12 +161,12 @@ class Test(unittest.TestCase):
         poll.addPath(rq, 'c',fqc)
         
         assert len(poll.children)==3
-        json = poll.toJSON()
-        assert len(json['paths'])==3
-        assert 'a' in map(lambda (x,y,z): y,json['paths'])
-        assert 'b' in map(lambda (x,y,z): y,json['paths'])
-        assert 'c' in map(lambda (x,y,z): y,json['paths'])
-        assert not 'd' in map(lambda (x,y,z): y,json['paths'])
-        
+        jsonPoll = poll.toDict()
+        assert len(jsonPoll['paths'])==3
+        assert 'a' in map(lambda (x,y,z): y,jsonPoll['paths'])
+        assert 'b' in map(lambda (x,y,z): y,jsonPoll['paths'])
+        assert 'c' in map(lambda (x,y,z): y,jsonPoll['paths'])
+        assert not 'd' in map(lambda (x,y,z): y,jsonPoll['paths'])
+
 unittest.main(argv=[''], verbosity=2, exit=False)
 
