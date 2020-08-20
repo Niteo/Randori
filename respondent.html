@@ -29,16 +29,18 @@ var poll = {"children": [
  "roots": [{"answers": ["O+", "A+", "Other"],
    "probability": ["1/3", "1/3", "1/3"],
    "qid": 0,
+   "truth": "1/2",
    "question": "Blood type?"}, 
    {"answers": ["A", "B", "C"],
    "probability": ["1/3", "1/3", "1/3"],
    "qid": 4,
+   "truth": "3/4",
    "question": "Q2?"},
    {"answers": ["1", "2"],
    "probability": ["1/2", "1/2"],
-   "qid": 3,
+   "qid": 3,   
+   "truth": "1/3",
    "question": "1 or 2?"}],
- "truth": ["1/2"],
  "order": [0, 4, 3]
 };
 
@@ -54,8 +56,10 @@ var sorted = [];
 var root_indices = [];
 var subtrees = [];
 
+var compound_ans_to_prob = {}; 
 
 
+// Traverse and decorate JSON
 function recurse(qid, order) {
   paths.forEach(function(d, i){
   
@@ -72,23 +76,29 @@ function recurse(qid, order) {
 
     if(source==qid){
         let add = lookup[target];
+        let parent_prefix = parent["answer_prefix"];
         order.push(add)
 
-        add["compund_probability"] = [];
+        // Continue building string if there is already one
+        if(parent_prefix){
+            prefix = parent_prefix+alt;
+          }
+
+        // Decorate
+        add["answer_prefix"] = prefix;
+        add["compound_answers"] = add["answers"].map(function (ans) {
+                return prefix+ans;
+        });
+
+        // Continue with probability from parent answer
+        if(parent["compound_probability"]){
+          compound_prob = parent["compound_probability"][parent_prefix+alt];
+        } 
+
+        // Decorate
+        add["compound_probability"] = {};
         add["answers"].forEach(function (answer, index) {
-          
-          if(parent["answer_prefix"]){
-            prefix = parent["answer_prefix"]+alt;
-          }
-
-          if(parent["compund_probability"]){
-            compound_prob = parent["compund_probability"][parent_index];
-          }
-
-            add["answer_prefix"] = prefix;
-            add["compund_probability"].push(compound_prob*eval(add["probability"][index]));
-            console.log("prefix \n")
-            console.log(add["answer_prefix"], add["compund_probability"]);
+            add["compound_probability"][prefix+answer] = compound_prob*eval(add["probability"][index]);  
         });
 
         recurse(target, order);
@@ -226,17 +236,23 @@ function init() {
       });
   });
 
-
   sorted.forEach(function (question) {
     if(poll["order"].includes(question["qid"])){
         root_indices.push(sorted.indexOf(question));
     }
-})
+  })
 
+  root_indices.forEach(function (elem, i) {
+      subtrees.push(sorted.slice(elem, root_indices[i+1]));
+  })
 
-root_indices.forEach(function (elem, i) {
-    subtrees.push(sorted.slice(elem, root_indices[i+1]));
-})
+    // Compound probability for roots
+  poll["roots"].forEach(function (root) {
+    root["compound_probability"] = {};
+    root["answers"].forEach(function (ans, index) {
+      root["compound_probability"][ans] = eval(root["probability"][index]); 
+    })
+  });
 
 }
 
@@ -256,18 +272,22 @@ function pollToMatrix(){
 
 init();
 
+
+
 var matrices = [];
 
-subtrees.forEach(function (subtree) {
+subtrees.forEach(function (subtree, index) {
   let lowest = undefined;
   let highest = undefined;
   let matrix = {};
+  let root_index;
 
-    let valid_answers = []
+    let valid_answers = {};
     subtree.forEach(function (question) {
 
       let temp_answers = question["answers"].slice()
       
+      // Remove alternatives that aren't leaves
       if(question["to_remove"]){
         let remove_me = question["answers"].indexOf(question["to_remove"]);
         temp_answers.splice(remove_me, 1);
@@ -275,40 +295,57 @@ subtrees.forEach(function (subtree) {
 
       // If root
       if(poll["order"].includes(question["qid"])){
-
-        //console.log(question["probability"]);
-        valid_answers = temp_answers;
-
+        root_index = question["qid"];
+        valid_answers[question["qid"]] = temp_answers;
       } else {
-        //console.log(question["compund_probability"]);
         let to_use = [];
 
         temp_answers.forEach(function (ans) {
-          to_use.push(question["answer_prefix"]+ans);
+          let name = question["answer_prefix"]+ans;
+          to_use.push(name);
         });
 
-        valid_answers = valid_answers.concat(to_use);
+        valid_answers[question["qid"]] = to_use;
       }
 
-      valid_answers.forEach(function (self) {
-        matrix[self] = {};
-
-          valid_answers.forEach(function (compare) {
-            let prob;
-            if(self == compare){
-              //console.log("higher prob");
-            }
-
-            matrix[self][compare] = prob;
-      });
       });
 
-    });
+      // For each input, create a transition to each output
+      Object.keys(valid_answers).forEach(function (qid){
+        valid_answers[qid].forEach(function (self){
 
-  console.log("FINAL LIST ", valid_answers);
+          matrix[self] = {};
 
-    matrices.push(matrix);
+            Object.keys(valid_answers).forEach(function (compare_qid) {
+              valid_answers[compare_qid].forEach(function (compare_alt){
+                let target_question = lookup[compare_qid];
+
+                let truth = eval(lookup[root_index]["truth"]);
+                // Probability of RANDOM answer
+                let prob = target_question["compound_probability"][compare_alt] * (1-truth);
+
+                // Higher probability of not changing answer (self->self)
+                if(self == compare_alt){
+                  prob = prob + truth;                  
+
+                }
+
+                matrix[self][compare_alt] = prob; 
+              });
+            });
+        });
+      });
+
+    
+  
+  
+  console.log("MATRIX", matrix);
+
+
+  matrices.push(matrix);
 });
+
+console.log("TODO: find epsilon from matrix");
 
 render();
 
