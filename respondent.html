@@ -11,6 +11,8 @@
 <button onclick="next()">next</button>
 <button onclick="submit()">submit</button>
 <blockquote id="state"></blockquote>
+<script src="https://unpkg.com/mathjs@7.2.0/dist/math.min.js"></script>
+
 <script>
 
 
@@ -70,7 +72,7 @@ function recurse(qid, order) {
     let prefix = alt;
     let parent = lookup[source];
     let parent_index = parent["answers"].indexOf(alt);
-    let compound_prob = eval(parent["probability"][parent_index]);
+    let compound_prob = math.Fraction(parent["probability"][parent_index]);
 
     parent["to_remove"] = alt;
 
@@ -98,7 +100,7 @@ function recurse(qid, order) {
         // Decorate
         add["compound_probability"] = {};
         add["answers"].forEach(function (answer, index) {
-            add["compound_probability"][prefix+answer] = compound_prob*eval(add["probability"][index]);  
+            add["compound_probability"][prefix+answer] = compound_prob.mul(math.Fraction(add["probability"][index]));  
         });
 
         recurse(target, order);
@@ -250,10 +252,26 @@ function init() {
   poll["roots"].forEach(function (root) {
     root["compound_probability"] = {};
     root["answers"].forEach(function (ans, index) {
-      root["compound_probability"][ans] = eval(root["probability"][index]); 
+      root["compound_probability"][ans] = math.Fraction(root["probability"][index]); 
     })
   });
 
+}
+
+// Rejection sampling using cryptographic random
+function getRandomInt(min, max){
+  let a = new Uint8Array(1); //Hold one random value
+  let rand_range = 256; //Range of crypto random
+  let desired_range = max-min+1; //Inclusive range
+
+  window.crypto.getRandomValues(a); //Inplace
+
+  // If a is within an incomplete interval, reject sample
+  if(a[0] >= Math.floor(rand_range/desired_range)*desired_range){
+      return getRandomInt(min, max);
+  }
+
+  return min + (a[0]%desired_range);
 }
 
 function submit() {
@@ -325,13 +343,14 @@ subtrees.forEach(function (subtree, index) {
               valid_answers[compare_qid].forEach(function (compare_alt){
                 let target_question = lookup[compare_qid];
 
-                let truth = eval(lookup[root_index]["truth"]);
+                let truth = math.Fraction(lookup[root_index]["truth"]);
                 // Probability of RANDOM answer
-                let prob = target_question["compound_probability"][compare_alt] * (1-truth);
+                let random = math.Fraction(1).sub(truth);
+                let prob = target_question["compound_probability"][compare_alt].mul(random);
 
                 // Higher probability of not changing answer (self->self)
                 if(self == compare_alt){
-                  prob = prob + truth;                  
+                  prob = prob.add(truth);                  
 
                 }
 
@@ -349,7 +368,7 @@ subtrees.forEach(function (subtree, index) {
               });
             });
 
-            let check = Math.max(max/min, min/max);
+            let check = Math.max(max.div(min), min.div(max));
             if(potential_epsilon==undefined || potential_epsilon<check){
               potential_epsilon = check;
             }
@@ -365,8 +384,6 @@ subtrees.forEach(function (subtree, index) {
 
 
 console.log(epsilon_per_subtree);
-
-
 render();
 
 </script>
