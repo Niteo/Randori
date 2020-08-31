@@ -59,7 +59,11 @@ var root_indices = [];
 var subtrees = [];
 
 var compound_ans_to_prob = {}; 
+var matrices = [];
+var epsilon_per_subtree = {};
 
+var valid_answers = {};
+var ans_to_compound = {};
 
 // Traverse and decorate JSON
 function recurse(qid, order) {
@@ -258,53 +262,18 @@ function init() {
 
 }
 
-// Rejection sampling using cryptographic random
-function getRandomInt(min, max){
-  let a = new Uint8Array(1); //Hold one random value
-  let rand_range = 256; //Range of crypto random
-  let desired_range = max-min+1; //Inclusive range
 
-  window.crypto.getRandomValues(a); //Inplace
-
-  // If a is within an incomplete interval, reject sample
-  if(a[0] >= Math.floor(rand_range/desired_range)*desired_range){
-      return getRandomInt(min, max);
-  }
-
-  return min + (a[0]%desired_range);
-}
-
-function submit() {
-  console.log("RANDOMIZE!");
-  pollToMatrix();
-
-}
 
 function pollToMatrix(){
-
-  
-
-}
-
-
-
-init();
-
-
-
-var matrices = [];
-var epsilon_per_subtree = {};
-
-subtrees.forEach(function (subtree, index) {
+  subtrees.forEach(function (subtree, index) {
   let matrix = {};
   let root_index;
-  let valid_answers = {};
   let potential_epsilon = undefined;
 
 
     subtree.forEach(function (question) {
 
-      let temp_answers = question["answers"].slice()
+      let temp_answers = question["answers"].slice();
       
       // Remove alternatives that aren't leaves
       if(question["to_remove"]){
@@ -319,9 +288,12 @@ subtrees.forEach(function (subtree, index) {
       } else {
         let to_use = [];
 
+        ans_to_compound[question["qid"]] = {};
         temp_answers.forEach(function (ans) {
           let name = question["answer_prefix"]+ans;
           to_use.push(name);
+
+          ans_to_compound[question["qid"]][ans] = name;
         });
 
         valid_answers[question["qid"]] = to_use;
@@ -381,9 +353,58 @@ subtrees.forEach(function (subtree, index) {
   epsilon_per_subtree[subtree[0]["qid"]] = potential_epsilon;
 
 });
+  
+
+}
+
+// Rejection sampling using cryptographic random
+function getRandomInt(min, max){
+  let a = new Uint8Array(1); //Hold one random value
+  let rand_range = 256; //Range of crypto random
+  let desired_range = max-min+1; //Inclusive range
+
+  window.crypto.getRandomValues(a); //Inplace
+
+  // If a is within an incomplete interval, reject sample
+  if(a[0] >= Math.floor(rand_range/desired_range)*desired_range){
+      return getRandomInt(min, max);
+  }
+
+  return min + (a[0]%desired_range);
+}
 
 
-console.log(epsilon_per_subtree);
+function submit() {
+  console.log("RANDOMIZE!");
+  pollToMatrix();
+
+  subtrees.forEach(function (subtree) {
+    let real = undefined;
+    let matrix = matrices[subtree];
+
+    subtree.forEach(function (question){
+      qid = question["qid"];
+      let candidate = answers[qid];
+
+      if(ans_to_compound[qid]){
+        candidate = ans_to_compound[qid][candidate];
+      }
+
+      if(valid_answers[qid].indexOf(candidate) != -1) {
+        real = candidate;
+      }
+
+    });
+
+    console.log("Using ", real);
+
+  });
+
+}
+
+
+
+init();
 render();
 
 </script>
