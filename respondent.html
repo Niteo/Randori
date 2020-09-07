@@ -59,10 +59,10 @@ var root_indices = [];
 var subtrees = [];
 
 var compound_ans_to_prob = {}; 
-var matrices = [];
+var matrices = {};
 var epsilon_per_subtree = {};
 
-var valid_answers = {};
+var valid_answers_per_subtree = {};
 var ans_to_compound = {};
 
 // Traverse and decorate JSON
@@ -265,11 +265,14 @@ function init() {
 
 
 function pollToMatrix(){
-  subtrees.forEach(function (subtree, index) {
-  let matrix = {};
-  let root_index;
-  let potential_epsilon = undefined;
+  let output = {};
 
+  subtrees.forEach(function (subtree, index) {
+
+    let matrix = {};
+    let root_index;
+    let potential_epsilon = undefined;
+    let valid_answers = {};
 
     subtree.forEach(function (question) {
 
@@ -284,7 +287,8 @@ function pollToMatrix(){
       // If root
       if(poll["order"].includes(question["qid"])){
         root_index = question["qid"];
-        valid_answers[question["qid"]] = temp_answers;
+        valid_answers[root_index] = temp_answers;
+        valid_answers_per_subtree[root_index]=temp_answers
       } else {
         let to_use = [];
 
@@ -297,6 +301,7 @@ function pollToMatrix(){
         });
 
         valid_answers[question["qid"]] = to_use;
+        valid_answers_per_subtree[root_index]+= to_use;
       }
 
       });
@@ -347,20 +352,19 @@ function pollToMatrix(){
         });
       });
 
-  console.log("MATRIX", matrix);
-  matrices.push(matrix);
+  output[root_index]=matrix;
 
   epsilon_per_subtree[subtree[0]["qid"]] = potential_epsilon;
 
-});
-  
 
+});
+  return output;
 }
 
 // Rejection sampling using cryptographic random
 function getRandomInt(min, max){
-  let a = new Uint8Array(1); //Hold one random value
-  let rand_range = 256; //Range of crypto random
+  let a = new Uint16Array(1); //Hold one random value
+  let rand_range = 65536; //Range of crypto random
   let desired_range = max-min+1; //Inclusive range
 
   window.crypto.getRandomValues(a); //Inplace
@@ -375,30 +379,82 @@ function getRandomInt(min, max){
 
 
 function submit() {
-  console.log("RANDOMIZE!");
-  pollToMatrix();
+  let output = {};
+  matrices = pollToMatrix();
 
-  subtrees.forEach(function (subtree) {
+
+  // Prepare a response for each question tree
+  subtrees.forEach(function (subtree, index) {
     let real = undefined;
-    let matrix = matrices[subtree];
+    let root_index = subtree[0]["qid"];
+    let matrix = matrices[root_index];
 
+    // Get rid of invalid responses, i.e non-leaves
     subtree.forEach(function (question){
       qid = question["qid"];
       let candidate = answers[qid];
 
-      if(ans_to_compound[qid]){
+      if(ans_to_compound[qid] && qid!=root_index){
         candidate = ans_to_compound[qid][candidate];
       }
 
-      if(valid_answers[qid].indexOf(candidate) != -1) {
+      if(valid_answers_per_subtree[root_index].indexOf(candidate) != -1) {
         real = candidate;
       }
 
     });
 
-    console.log("Using ", real);
+    if(real != undefined){
+      let transitions = matrix[real];
+      let common_denominator = 1;
+      console.log("Input ", real);
+
+      console.log("COIN FLIP");
+      console.log("Transition matrix is ", transitions);
+
+      // Find gcd to calculate relative weight for probability distribution
+      for(key in transitions) {
+        let d = transitions[key].d;
+        if(d > common_denominator){
+          common_denominator = d;
+        }
+      }
+
+
+      // Populate with relative weights
+      let answer_relative_weight = {};
+      for(key in transitions) {
+        let d = transitions[key].d;
+        let n = transitions[key].n;
+        let multiplier = common_denominator/d;
+        let weight = n*multiplier;
+        answer_relative_weight[key] = weight;
+        
+      }
+
+      // Ranges [include, exclude]
+      let count = 1;
+      let ranges = {};
+      for(key in answer_relative_weight){
+        let start = count;
+        let stop = answer_relative_weight[key]+count-1;
+        count +=answer_relative_weight[key];
+
+        for(let i=start; i<=stop; i++){
+            ranges[i] = key;
+        }
+      }
+      //Use cryptographic random [1-gcd] and pick the winner
+      let random = getRandomInt(1,common_denominator);
+      output[root_index] = ranges[random];
+
+      console.log("Output ", output[root_index]);
+
+    }
 
   });
+
+  console.log(output)
 
 }
 
