@@ -156,7 +156,6 @@ function createQuestionWithAlternatives(text, alternatives) {
         let to_use = alternative;
         if(qid != parent_index){
           alternative = ans_to_compound[qid][alternative];
-          console.log("Finding compound", ans_to_compound, alternative)
         }
 
         shadow_answers[parent_index] = alternative;
@@ -341,7 +340,7 @@ function pollToMatrix(){
   subtrees.forEach(function (subtree, index) {
 
     let matrix = {};
-    let root_index;
+    let root_index = subtree[0]["qid"];
     let potential_epsilon = undefined;
 
 
@@ -637,8 +636,7 @@ render();
 // TIMEOUT
 
 
-
-//matrices = pollToMatrix();
+matrices = pollToMatrix(); //Constant time
 matrices_to_use = undefined;
 answers_to_use = {};
 
@@ -655,7 +653,7 @@ for(answer_index in random_answers){
 
 //POST
 
-//responses = randomizedResponse(matrices_to_use, answers);
+//responses = randomizedResponse(matrices_to_use, answers); //Constant time
 
 </script>
 </body>
