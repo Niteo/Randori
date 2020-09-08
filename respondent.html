@@ -346,48 +346,51 @@ function pollToMatrix(){
 
       // For each input, create a transition to each output
       Object.keys(valid_answers).forEach(function (qid){
-        valid_answers[qid].forEach(function (self){
+        // Only look at answers in current subtree
+        if(root_index==qid_to_root_index[qid]){
+                valid_answers[qid].forEach(function (self){
 
-          // Find min/max per row
-          let max = undefined;
-          let min = undefined;
+                  // Find min/max per row
+                  let max = undefined;
+                  let min = undefined;
 
-          matrix[self] = {};
+                  matrix[self] = {};
 
-            Object.keys(valid_answers).forEach(function (compare_qid) {
-              valid_answers[compare_qid].forEach(function (compare_alt){
-                let target_question = lookup[compare_qid];
+                    Object.keys(valid_answers).forEach(function (compare_qid) {
+                      valid_answers[compare_qid].forEach(function (compare_alt){
+                        let target_question = lookup[compare_qid];
 
-                let truth = math.Fraction(lookup[root_index]["truth"]);
-                // Probability of RANDOM answer
-                let random = math.Fraction(1).sub(truth);
-                let prob = target_question["compound_probability"][compare_alt].mul(random);
+                        let truth = math.Fraction(lookup[root_index]["truth"]);
+                        // Probability of RANDOM answer
+                        let random = math.Fraction(1).sub(truth);
+                        let prob = target_question["compound_probability"][compare_alt].mul(random);
 
-                // Higher probability of not changing answer (self->self)
-                if(self == compare_alt){
-                  prob = prob.add(truth);                  
+                        // Higher probability of not changing answer (self->self)
+                        if(self == compare_alt){
+                          prob = prob.add(truth);                  
 
-                }
+                        }
 
-                // Initialize first loop
-                if(max==undefined && min==undefined){
-                  max = prob;
-                  min = prob;
-                } else if(prob > max){
-                  max = prob;
-                } else if(prob < min){
-                  min = prob;
-                }
+                        // Initialize first loop
+                        if(max==undefined && min==undefined){
+                          max = prob;
+                          min = prob;
+                        } else if(prob > max){
+                          max = prob;
+                        } else if(prob < min){
+                          min = prob;
+                        }
 
-                matrix[self][compare_alt] = prob; 
-              });
-            });
+                        matrix[self][compare_alt] = prob; 
+                      });
+                    });
 
-            let check = Math.max(max.div(min), min.div(max));
-            if(potential_epsilon==undefined || potential_epsilon<check){
-              potential_epsilon = check;
-            }
-        });
+                    let check = Math.max(max.div(min), min.div(max));
+                    if(potential_epsilon==undefined || potential_epsilon<check){
+                      potential_epsilon = check;
+                    }
+                });
+        }
       });
 
   output[root_index]=matrix;
@@ -541,75 +544,57 @@ function randomizedResponse(matrices, given_answers) {
   let output = {};
   
   // Prepare a response for each question tree
-  subtrees.forEach(function (subtree, index) {
-    let real = undefined;
-    let root_index = subtree[0]["qid"];
+  for(root_index in given_answers){
+    let real = given_answers[root_index];
     let matrix = matrices[root_index];
+    let transitions = matrix[real];
+    let common_denominator = 1;
+    console.log("Input ", real);
 
-    // Get rid of invalid responses, i.e non-leaves
-    subtree.forEach(function (question){
-      let qid = question["qid"];
-      let candidate = given_answers[qid];
+    console.log("COIN FLIP");
+    console.log("Transition matrix is ", transitions);
 
-      if(ans_to_compound[qid] && qid!=root_index){
-        candidate = ans_to_compound[qid][candidate];
+    // Find gcd to calculate relative weight for probability distribution
+    for(key in transitions) {
+      let d = transitions[key].d;
+      if(d > common_denominator){
+        common_denominator = d;
       }
-
-      if(valid_answers_per_subtree[root_index].indexOf(candidate) != -1) {
-        real = candidate;
-      }
-
-    });
-
-    if(real != undefined){
-      let transitions = matrix[real];
-      let common_denominator = 1;
-      console.log("Input ", real);
-
-      console.log("COIN FLIP");
-      console.log("Transition matrix is ", transitions);
-
-      // Find gcd to calculate relative weight for probability distribution
-      for(key in transitions) {
-        let d = transitions[key].d;
-        if(d > common_denominator){
-          common_denominator = d;
-        }
-      }
-
-
-      // Populate with relative weights
-      let answer_relative_weight = {};
-      for(key in transitions) {
-        let d = transitions[key].d;
-        let n = transitions[key].n;
-        let multiplier = common_denominator/d;
-        let weight = n*multiplier;
-        answer_relative_weight[key] = weight;
-        
-      }
-
-      // Ranges [include, exclude]
-      let count = 1;
-      let ranges = {};
-      for(key in answer_relative_weight){
-        let start = count;
-        let stop = answer_relative_weight[key]+count-1;
-        count +=answer_relative_weight[key];
-
-        for(let i=start; i<=stop; i++){
-            ranges[i] = key;
-        }
-      }
-      //Use cryptographic random [1-gcd] and pick the winner
-      let random = getRandomInt(1,common_denominator);
-      output[root_index] = ranges[random];
-
-      console.log("Output ", output[root_index]);
-
     }
 
-  });
+
+    // Populate with relative weights
+    let answer_relative_weight = {};
+    for(key in transitions) {
+      let d = transitions[key].d;
+      let n = transitions[key].n;
+      let multiplier = common_denominator/d;
+      let weight = n*multiplier;
+      answer_relative_weight[key] = weight;
+      
+    }
+
+    // Ranges [include, exclude]
+    let count = 1;
+    let ranges = {};
+    for(key in answer_relative_weight){
+      let start = count;
+      let stop = answer_relative_weight[key]+count-1;
+      count +=answer_relative_weight[key];
+
+      for(let i=start; i<=stop; i++){
+          ranges[i] = key;
+      }
+    }
+    //Use cryptographic random [1-gcd] and pick the winner
+    let random = getRandomInt(1,common_denominator);
+    output[root_index] = ranges[random];
+
+    console.log("Output ", output[root_index]);
+
+  
+
+  }
 
   console.log(output)
   return output;
@@ -623,33 +608,40 @@ function submit(){
 
 }
 
+function constantTimePostProcessing(){
+  matrices_to_use = {};
+  answers_to_use = {};
+
+  // WARNING!
+  // Be sure to make loop constant time, no loops on actual data
+  for(answer_index in random_answers){
+      if(answers[answer_index]){
+        console.log("Answer exist")
+        answers_to_use[answer_index] = answers[answer_index];
+        matrices_to_use[answer_index] = matrices[answer_index];
+      } else {
+        answers_to_use[answer_index] = random_answers[answer_index];
+        matrices_to_use[answer_index] = random_matrices[answer_index];
+      }
+  }
+
+  randomizedResponse(matrices_to_use, answers_to_use);
+}
+
 
 
 //GET
 init();
 var random_matrices = randomMatrix();
 var random_answers = fullRandom(random_matrices);
-var matrices = undefined;
+var matrices = pollToMatrix();
 render();
 
 
 // TIMEOUT
 
 
-matrices = pollToMatrix(); //Constant time
-matrices_to_use = undefined;
-answers_to_use = {};
 
-// WARNING!
-// Be sure to make loop constant time, no loops on actual data
-for(answer_index in random_answers){
-    if(answers[answer_index]){
-      console.log("Answer exist")
-      answers_to_use[answer_index] = answers[answer_index];
-    } else {
-      answers_to_use[answer_index] = random_answers[answer_index];
-    }
-}
 
 //POST
 
