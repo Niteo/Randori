@@ -60,13 +60,11 @@ var sorted = [];
 var root_indices = [];
 var subtrees = [];
 
-var compound_ans_to_prob = {}; 
 var matrices = {};
 var epsilon_per_subtree = {};
 
 var valid_answers_per_subtree = {};
 var ans_to_compound = {};
-var valid_answers = {};
 
 var responses = undefined;
 
@@ -295,35 +293,32 @@ function init() {
 
   // Populate valid_answers and ans_to_compound
   subtrees.forEach(function (subtree, index) {
+    let root_index = undefined;
     subtree.forEach(function (question) {
+      let temp_answers = question["answers"].slice();
+      
+      // Remove alternatives that aren't leaves
+      if(question["to_remove"]){
+        let remove_me = question["answers"].indexOf(question["to_remove"]);
+        temp_answers.splice(remove_me, 1);
+      } 
 
-    let temp_answers = question["answers"].slice();
-    
-    // Remove alternatives that aren't leaves
-    if(question["to_remove"]){
-      let remove_me = question["answers"].indexOf(question["to_remove"]);
-      temp_answers.splice(remove_me, 1);
-    } 
+      // If root
+      if(poll["order"].includes(question["qid"])){
+        root_index = question["qid"];
+        valid_answers_per_subtree[root_index]=temp_answers
+      } else {
+        let to_use = [];
 
-    // If root
-    if(poll["order"].includes(question["qid"])){
-      root_index = question["qid"];
-      valid_answers[root_index] = temp_answers;
-      valid_answers_per_subtree[root_index]=temp_answers
-    } else {
-      let to_use = [];
+        ans_to_compound[question["qid"]] = {};
+        temp_answers.forEach(function (ans) {
+          let name = question["answer_prefix"]+ans;
+          to_use.push(name);
 
-      ans_to_compound[question["qid"]] = {};
-      temp_answers.forEach(function (ans) {
-        let name = question["answer_prefix"]+ans;
-        to_use.push(name);
-
-        ans_to_compound[question["qid"]][ans] = name;
-      });
-
-      valid_answers[question["qid"]] = to_use;
-      valid_answers_per_subtree[root_index]+= to_use;
-    }
+          ans_to_compound[question["qid"]][ans] = name;
+        });
+        valid_answers_per_subtree[root_index]=valid_answers_per_subtree[root_index].concat(to_use);
+      }
 
     });
 
@@ -332,77 +327,13 @@ function init() {
 
 }
 
-
-
 function pollToMatrix(){
   let output = {};
 
-  subtrees.forEach(function (subtree, index) {
 
-    let matrix = {};
-    let root_index = subtree[0]["qid"];
-    let potential_epsilon = undefined;
-
-
-      // For each input, create a transition to each output
-      Object.keys(valid_answers).forEach(function (qid){
-        // Only look at answers in current subtree
-        if(root_index==qid_to_root_index[qid]){
-                valid_answers[qid].forEach(function (self){
-
-                  // Find min/max per row
-                  let max = undefined;
-                  let min = undefined;
-
-                  matrix[self] = {};
-
-                    Object.keys(valid_answers).forEach(function (compare_qid) {
-                      valid_answers[compare_qid].forEach(function (compare_alt){
-                        let target_question = lookup[compare_qid];
-
-                        let truth = math.Fraction(lookup[root_index]["truth"]);
-                        // Probability of RANDOM answer
-                        let random = math.Fraction(1).sub(truth);
-                        let prob = target_question["compound_probability"][compare_alt].mul(random);
-
-                        // Higher probability of not changing answer (self->self)
-                        if(self == compare_alt){
-                          prob = prob.add(truth);                  
-
-                        }
-
-                        // Initialize first loop
-                        if(max==undefined && min==undefined){
-                          max = prob;
-                          min = prob;
-                        } else if(prob > max){
-                          max = prob;
-                        } else if(prob < min){
-                          min = prob;
-                        }
-
-                        matrix[self][compare_alt] = prob; 
-                      });
-                    });
-
-                    let check = Math.max(max.div(min), min.div(max));
-                    if(potential_epsilon==undefined || potential_epsilon<check){
-                      potential_epsilon = check;
-                    }
-                });
-        }
-      });
-
-  output[root_index]=matrix;
-
-  epsilon_per_subtree[subtree[0]["qid"]] = potential_epsilon;
-
-
-});
-  return output;
 }
 
-function randomMatrix(){
+function pollToMatrix(){
   let output = {};
 
   subtrees.forEach(function (subtree, index) {
@@ -440,6 +371,102 @@ function randomMatrix(){
 
         valid_answers[question["qid"]] = to_use;
         valid_answers_per_subtree[root_index]+= to_use;
+      }
+
+      });
+
+      // For each input, create a transition to each output
+      Object.keys(valid_answers).forEach(function (qid){
+        valid_answers[qid].forEach(function (self){
+
+          // Find min/max per row
+          let max = undefined;
+          let min = undefined;
+
+          matrix[self] = {};
+
+            Object.keys(valid_answers).forEach(function (compare_qid) {
+              valid_answers[compare_qid].forEach(function (compare_alt){
+                let target_question = lookup[compare_qid];
+
+                let truth = math.Fraction(lookup[root_index]["truth"]);
+                // Probability of RANDOM answer
+                let random = math.Fraction(1).sub(truth);
+                let prob = target_question["compound_probability"][compare_alt].mul(random);
+
+                // Higher probability of not changing answer (self->self)
+                if(self == compare_alt){
+                  prob = prob.add(truth);                  
+
+                }
+
+                // Initialize first loop
+                if(max==undefined && min==undefined){
+                  max = prob;
+                  min = prob;
+                } else if(prob > max){
+                  max = prob;
+                } else if(prob < min){
+                  min = prob;
+                }
+
+                matrix[self][compare_alt] = prob; 
+              });
+            });
+
+            let check = Math.max(max.div(min), min.div(max));
+            if(potential_epsilon==undefined || potential_epsilon<check){
+              potential_epsilon = check;
+            }
+        });
+      });
+
+  output[root_index]=matrix;
+
+  epsilon_per_subtree[subtree[0]["qid"]] = potential_epsilon;
+
+
+});
+  return output;
+}
+
+
+function randomMatrix(){
+  let output = {};
+
+  subtrees.forEach(function (subtree, index) {
+
+    let matrix = {};
+    let root_index;
+    let potential_epsilon = undefined;
+    let valid_answers = {};
+
+    subtree.forEach(function (question) {
+
+      let temp_answers = question["answers"].slice();
+      
+      // Remove alternatives that aren't leaves
+      if(question["to_remove"]){
+        let remove_me = question["answers"].indexOf(question["to_remove"]);
+        temp_answers.splice(remove_me, 1);
+      } 
+
+      // If root
+      if(poll["order"].includes(question["qid"])){
+        root_index = question["qid"];
+        valid_answers[root_index] = temp_answers;
+      } else {
+        let to_use = [];
+
+        ans_to_compound[question["qid"]] = {};
+        temp_answers.forEach(function (ans) {
+          let name = question["answer_prefix"]+ans;
+          to_use.push(name);
+
+          ans_to_compound[question["qid"]][ans] = name;
+        });
+
+        valid_answers[question["qid"]] = to_use;
       }
 
       });
@@ -540,13 +567,13 @@ function fullRandom(matrices) {
 
 
 
-function randomizedResponse(matrices, given_answers) {
+function randomizedResponse(m, given_answers) {
   let output = {};
   
   // Prepare a response for each question tree
   for(root_index in given_answers){
     let real = given_answers[root_index];
-    let matrix = matrices[root_index];
+    let matrix = m[root_index];
     let transitions = matrix[real];
     let common_denominator = 1;
     console.log("Input ", real);
@@ -615,9 +642,9 @@ function constantTimePostProcessing(){
   // WARNING!
   // Be sure to make loop constant time, no loops on actual data
   for(answer_index in random_answers){
-      if(answers[answer_index]){
+      if(shadow_answers[answer_index]){
         console.log("Answer exist")
-        answers_to_use[answer_index] = answers[answer_index];
+        answers_to_use[answer_index] = shadow_answers[answer_index];
         matrices_to_use[answer_index] = matrices[answer_index];
       } else {
         answers_to_use[answer_index] = random_answers[answer_index];
@@ -625,6 +652,7 @@ function constantTimePostProcessing(){
       }
   }
 
+  console.log("Input is ", matrices_to_use, answers_to_use);
   randomizedResponse(matrices_to_use, answers_to_use);
 }
 
