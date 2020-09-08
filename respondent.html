@@ -46,6 +46,7 @@ var poll = {"children": [
  "order": [0, 4, 3]
 };
 
+const timeout = 10000;
 var answers = {};
 var shadow_answers = {};
 
@@ -643,9 +644,12 @@ function constantTimePostProcessing(){
   }
 
   console.log("Input is ", matrices_to_use, answers_to_use);
-  return randomizedResponse(matrices_to_use, answers_to_use);
+  rr = randomizedResponse(matrices_to_use, answers_to_use);
 }
 
+function post(){
+  console.log("POST ", rr)
+}
 
 
 //GET
@@ -653,17 +657,13 @@ init();
 var random_matrices = randomMatrix();
 var random_answers = fullRandom(random_matrices);
 var matrices = pollToMatrix();
+var rr = undefined;
 render();
 
 
 // TIMEOUT
-
-
-
-
-//POST
-
-//responses = randomizedResponse(matrices_to_use, answers); //Constant time
+setTimeout(constantTimePostProcessing, timeout);
+//EVERYTHING AFTER TIMEOUT MUST BE CONSTANT TIME!
 
 </script>
 </body>
