@@ -516,10 +516,6 @@ function fullRandom(matrices) {
     let root_index = subtree[0]["qid"];
     let transitions = matrices[root_index];
     let common_denominator = 1;
-
-    console.log("COIN FLIP");
-    console.log("Transition matrix is ", transitions);
-
     // Find gcd to calculate relative weight for probability distribution
     for(key in transitions) {
       let d = transitions[key].d;
@@ -555,12 +551,8 @@ function fullRandom(matrices) {
     let random = getRandomInt(1,common_denominator);
     output[root_index] = ranges[random];
 
-    console.log("Output ", output[root_index]);
-
-
   });
 
-  console.log(output)
   return output;
 
 }
@@ -623,7 +615,6 @@ function randomizedResponse(m, given_answers) {
 
   }
 
-  console.log(output)
   return output;
 
 }
@@ -643,7 +634,6 @@ function constantTimePostProcessing(){
   // Be sure to make loop constant time, no loops on actual data
   for(answer_index in random_answers){
       if(shadow_answers[answer_index]){
-        console.log("Answer exist")
         answers_to_use[answer_index] = shadow_answers[answer_index];
         matrices_to_use[answer_index] = matrices[answer_index];
       } else {
@@ -653,7 +643,7 @@ function constantTimePostProcessing(){
   }
 
   console.log("Input is ", matrices_to_use, answers_to_use);
-  randomizedResponse(matrices_to_use, answers_to_use);
+  return randomizedResponse(matrices_to_use, answers_to_use);
 }
 
 
