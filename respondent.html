@@ -47,6 +47,7 @@ var poll = {"children": [
 };
 
 var answers = {};
+var shadow_answers = {};
 
 var idx = 0; 
 
@@ -65,6 +66,7 @@ var epsilon_per_subtree = {};
 
 var valid_answers_per_subtree = {};
 var ans_to_compound = {};
+var valid_answers = {};
 
 var responses = undefined;
 
@@ -146,8 +148,18 @@ function createQuestionWithAlternatives(text, alternatives) {
 	  form.appendChild(text);
 
 	  input.onclick = function() {
+        let qid = data[idx]["qid"];
 	      data[idx]["answer"] = alternative;
-        answers[data[idx]["qid"]] = alternative;
+        answers[qid] = alternative;
+
+        let parent_index = qid_to_root_index[qid];
+        let to_use = alternative;
+        if(qid != parent_index){
+          alternative = ans_to_compound[qid][alternative];
+          console.log("Finding compound", ans_to_compound, alternative)
+        }
+
+        shadow_answers[parent_index] = alternative;
 	      render();
 	  };
       });
@@ -282,6 +294,42 @@ function init() {
       });
   });
 
+  // Populate valid_answers and ans_to_compound
+  subtrees.forEach(function (subtree, index) {
+    subtree.forEach(function (question) {
+
+    let temp_answers = question["answers"].slice();
+    
+    // Remove alternatives that aren't leaves
+    if(question["to_remove"]){
+      let remove_me = question["answers"].indexOf(question["to_remove"]);
+      temp_answers.splice(remove_me, 1);
+    } 
+
+    // If root
+    if(poll["order"].includes(question["qid"])){
+      root_index = question["qid"];
+      valid_answers[root_index] = temp_answers;
+      valid_answers_per_subtree[root_index]=temp_answers
+    } else {
+      let to_use = [];
+
+      ans_to_compound[question["qid"]] = {};
+      temp_answers.forEach(function (ans) {
+        let name = question["answer_prefix"]+ans;
+        to_use.push(name);
+
+        ans_to_compound[question["qid"]][ans] = name;
+      });
+
+      valid_answers[question["qid"]] = to_use;
+      valid_answers_per_subtree[root_index]+= to_use;
+    }
+
+    });
+
+  });
+
 
 }
 
@@ -295,39 +343,7 @@ function pollToMatrix(){
     let matrix = {};
     let root_index;
     let potential_epsilon = undefined;
-    let valid_answers = {};
 
-    subtree.forEach(function (question) {
-
-      let temp_answers = question["answers"].slice();
-      
-      // Remove alternatives that aren't leaves
-      if(question["to_remove"]){
-        let remove_me = question["answers"].indexOf(question["to_remove"]);
-        temp_answers.splice(remove_me, 1);
-      } 
-
-      // If root
-      if(poll["order"].includes(question["qid"])){
-        root_index = question["qid"];
-        valid_answers[root_index] = temp_answers;
-        valid_answers_per_subtree[root_index]=temp_answers
-      } else {
-        let to_use = [];
-
-        ans_to_compound[question["qid"]] = {};
-        temp_answers.forEach(function (ans) {
-          let name = question["answer_prefix"]+ans;
-          to_use.push(name);
-
-          ans_to_compound[question["qid"]][ans] = name;
-        });
-
-        valid_answers[question["qid"]] = to_use;
-        valid_answers_per_subtree[root_index]+= to_use;
-      }
-
-      });
 
       // For each input, create a transition to each output
       Object.keys(valid_answers).forEach(function (qid){
@@ -384,6 +400,69 @@ function pollToMatrix(){
   return output;
 }
 
+function randomMatrix(){
+  let output = {};
+
+  subtrees.forEach(function (subtree, index) {
+
+    let matrix = {};
+    let root_index;
+    let potential_epsilon = undefined;
+    let valid_answers = {};
+
+    subtree.forEach(function (question) {
+
+      let temp_answers = question["answers"].slice();
+      
+      // Remove alternatives that aren't leaves
+      if(question["to_remove"]){
+        let remove_me = question["answers"].indexOf(question["to_remove"]);
+        temp_answers.splice(remove_me, 1);
+      } 
+
+      // If root
+      if(poll["order"].includes(question["qid"])){
+        root_index = question["qid"];
+        valid_answers[root_index] = temp_answers;
+        valid_answers_per_subtree[root_index]=temp_answers
+      } else {
+        let to_use = [];
+
+        ans_to_compound[question["qid"]] = {};
+        temp_answers.forEach(function (ans) {
+          let name = question["answer_prefix"]+ans;
+          to_use.push(name);
+
+          ans_to_compound[question["qid"]][ans] = name;
+        });
+
+        valid_answers[question["qid"]] = to_use;
+        valid_answers_per_subtree[root_index]+= to_use;
+      }
+
+      });
+
+      // For any input, create a transition to each output
+      matrix = {};
+
+      Object.keys(valid_answers).forEach(function (compare_qid) {
+        valid_answers[compare_qid].forEach(function (compare_alt){
+          let target_question = lookup[compare_qid];
+
+          // Probability of RANDOM answer
+          let random = math.Fraction(1);
+          let prob = target_question["compound_probability"][compare_alt].mul(random);
+
+          matrix[compare_alt] = prob; 
+        });
+      });
+
+
+  output[root_index]=matrix;
+  });
+return output;
+}
+
 // Rejection sampling using cryptographic random
 function getRandomInt(min, max){
   let a = new Uint16Array(1); //Hold one random value
@@ -400,12 +479,68 @@ function getRandomInt(min, max){
   return min + (a[0]%desired_range);
 }
 
-
-
-function randomizedResponse() {
+function fullRandom(matrices) {
   let output = {};
-  matrices = pollToMatrix();
+  
+  // Prepare a response for each question tree
+  subtrees.forEach(function (subtree, index) {
+    let root_index = subtree[0]["qid"];
+    let transitions = matrices[root_index];
+    let common_denominator = 1;
 
+    console.log("COIN FLIP");
+    console.log("Transition matrix is ", transitions);
+
+    // Find gcd to calculate relative weight for probability distribution
+    for(key in transitions) {
+      let d = transitions[key].d;
+      if(d > common_denominator){
+        common_denominator = d;
+      }
+    }
+
+    // Populate with relative weights
+    let answer_relative_weight = {};
+    for(key in transitions) {
+      let d = transitions[key].d;
+      let n = transitions[key].n;
+      let multiplier = common_denominator/d;
+      let weight = n*multiplier;
+      answer_relative_weight[key] = weight;
+      
+    }
+
+    // Ranges [include, exclude]
+    let count = 1;
+    let ranges = {};
+    for(key in answer_relative_weight){
+      let start = count;
+      let stop = answer_relative_weight[key]+count-1;
+      count +=answer_relative_weight[key];
+
+      for(let i=start; i<=stop; i++){
+          ranges[i] = key;
+      }
+    }
+    //Use cryptographic random [1-gcd] and pick the winner
+    let random = getRandomInt(1,common_denominator);
+    output[root_index] = ranges[random];
+
+    console.log("Output ", output[root_index]);
+
+
+  });
+
+  console.log(output)
+  return output;
+
+}
+
+
+
+function randomizedResponse(matrices, given_answers) {
+  let output = {};
+  
   // Prepare a response for each question tree
   subtrees.forEach(function (subtree, index) {
     let real = undefined;
@@ -415,7 +550,7 @@ function randomizedResponse() {
     // Get rid of invalid responses, i.e non-leaves
     subtree.forEach(function (question){
       let qid = question["qid"];
-      let candidate = answers[qid];
+      let candidate = given_answers[qid];
 
       if(ans_to_compound[qid] && qid!=root_index){
         candidate = ans_to_compound[qid][candidate];
@@ -490,11 +625,37 @@ function submit(){
 }
 
 
+
 //GET
 init();
+var random_matrices = randomMatrix();
+var random_answers = fullRandom(random_matrices);
+var matrices = undefined;
 render();
+
+
+// TIMEOUT
+
+
+
+//matrices = pollToMatrix();
+matrices_to_use = undefined;
+answers_to_use = {};
+
+// WARNING!
+// Be sure to make loop constant time, no loops on actual data
+for(answer_index in random_answers){
+    if(answers[answer_index]){
+      console.log("Answer exist")
+      answers_to_use[answer_index] = answers[answer_index];
+    } else {
+      answers_to_use[answer_index] = random_answers[answer_index];
+    }
+}
+
 //POST
-responses = randomizedResponse();
+
+//responses = randomizedResponse(matrices_to_use, answers);
 
 </script>
 </body>
