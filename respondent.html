@@ -52,6 +52,7 @@ var idx = 0;
 
 // Create lookup dict: qid->question
 var lookup = {};
+var qid_to_root_index = {};
 var paths = poll["paths"];
 var questions = poll["roots"].concat(poll["children"]);
 var sorted = [];
@@ -64,6 +65,8 @@ var epsilon_per_subtree = {};
 
 var valid_answers_per_subtree = {};
 var ans_to_compound = {};
+
+var responses = undefined;
 
 // Traverse and decorate JSON
 function recurse(qid, order) {
@@ -203,6 +206,8 @@ function prev() {
 }
 
 function init() {
+
+  // Pair answer with probability
   questions.forEach(function(q) {
      q["tuples"] = q["answers"].map(function(a,i) {
       return {"answer": a,
@@ -211,16 +216,19 @@ function init() {
      })
   })
 
+  // Map qid->question
   questions.forEach(function(question, i){
       lookup[question["qid"]] = question;
   });
 
 
+  // Find the question order
   poll["order"].forEach(function (d, i){
     sorted.push(lookup[d]);
     recurse(d, sorted);
   });
 
+  // Prepare data structure to show user
   sorted.forEach(function (question, index){
       data.push({
         "text":question["question"], 
@@ -228,6 +236,7 @@ function init() {
         "qid": question["qid"]});
   });
 
+  // Decorate user structure with conditions for proper next/previous functionality
   paths.forEach(function (d) {
       let source = d[0];
       let alt = d[1];
@@ -242,12 +251,14 @@ function init() {
       });
   });
 
+  // Store all root indices for easy lookup
   sorted.forEach(function (question) {
     if(poll["order"].includes(question["qid"])){
         root_indices.push(sorted.indexOf(question));
     }
   })
 
+  // A subtree is an ORDERED set of root+follow-ups
   root_indices.forEach(function (elem, i) {
       subtrees.push(sorted.slice(elem, root_indices[i+1]));
   })
@@ -259,6 +270,18 @@ function init() {
       root["compound_probability"][ans] = math.Fraction(root["probability"][index]); 
     })
   });
+
+
+  // Add mapping qid->root_qid
+  subtrees.forEach(function (subtree, index) {
+      let root_index = subtree[0]["qid"];
+
+      subtree.forEach(function (question){
+        let qid = question["qid"];
+        qid_to_root_index[qid] = root_index;
+      });
+  });
+
 
 }
 
@@ -378,10 +401,10 @@ function getRandomInt(min, max){
 }
 
 
-function submit() {
+
+function randomizedResponse() {
   let output = {};
   matrices = pollToMatrix();
-
 
   // Prepare a response for each question tree
   subtrees.forEach(function (subtree, index) {
@@ -391,7 +414,7 @@ function submit() {
 
     // Get rid of invalid responses, i.e non-leaves
     subtree.forEach(function (question){
-      qid = question["qid"];
+      let qid = question["qid"];
       let candidate = answers[qid];
 
       if(ans_to_compound[qid] && qid!=root_index){
@@ -455,13 +478,23 @@ function submit() {
   });
 
   console.log(output)
+  return output;
+
+}
+
+function submit(){
+
+
+  console.log("SENDING RESPONSES");
 
 }
 
 
-
+//GET
 init();
 render();
+//POST
+responses = randomizedResponse();
 
 </script>
 </body>
