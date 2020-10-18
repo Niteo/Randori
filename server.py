@@ -11,12 +11,7 @@ import seaborn as sns
 
 app = Flask(__name__)
 
-
 # Annotated functions
-@app.route('/get')
-def getPoll():
-    return {}
-
 @app.route('/create')
 def setPoll():
     return {}

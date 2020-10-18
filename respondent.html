@@ -4,13 +4,16 @@
       padding-top: 1em;
   }
 </style>
+<head><title>Randori: Respondent Interface</title></head>
 <body>
-<h1>Poll</h1>
-<div id="root"></div>
-<button onclick="prev()">prev</button>
-<button onclick="next()">next</button>
-<button onclick="submit()">submit</button>
-<blockquote id="state"></blockquote>
+<h1 id="title">Poll</h1>
+<div id="container">
+  <div id="root"></div>
+  <button onclick="prev()">prev</button>
+  <button onclick="next()">next</button>
+  <button onclick="submit()">submit</button>
+  <blockquote id="state"></blockquote>
+</div>
 <script src="https://unpkg.com/mathjs@7.2.0/dist/math.min.js"></script>
 
 <script>
@@ -18,33 +21,8 @@
 
 var data = [];
 
-var poll = {"children": [
-{"answers": ["B+", "AB+", "O-", "A-", "Other"],
-   "probability": ["1/5", "1/5", "1/5", "1/5", "1/5"],
-   "qid": 1,
-   "question": "Specify..."},
-  {"answers": ["B-", "AB-"],
-   "probability": ["3/4", "1/4"],
-   "qid": 2,
-   "question": "Specify further..."}],
- "paths": [[0, "Other", 1], [1, "Other", 2]],
- "roots": [{"answers": ["O+", "A+", "Other"],
-   "probability": ["1/3", "1/3", "1/3"],
-   "qid": 0,
-   "truth": "1/2",
-   "question": "Blood type?"}, 
-   {"answers": ["A", "B", "C"],
-   "probability": ["1/3", "1/3", "1/3"],
-   "qid": 4,
-   "truth": "3/4",
-   "question": "Q2?"},
-   {"answers": ["1", "2"],
-   "probability": ["1/2", "1/2"],
-   "qid": 3,   
-   "truth": "1/3",
-   "question": "1 or 2?"}],
- "order": [0, 4, 3]
-};
+
+
 
 const timeout = 10000;
 var answers = {};
@@ -55,8 +33,8 @@ var idx = 0;
 // Create lookup dict: qid->question
 var lookup = {};
 var qid_to_root_index = {};
-var paths = poll["paths"];
-var questions = poll["roots"].concat(poll["children"]);
+var paths = {};
+var questions = {};
 var sorted = [];
 var root_indices = [];
 var subtrees = [];
@@ -68,6 +46,23 @@ var valid_answers_per_subtree = {};
 var ans_to_compound = {};
 
 var responses = undefined;
+var random_matrices = undefined;
+var random_answers = undefined;
+var matrices = undefined;
+var rr = undefined;
+
+
+var poll = {}
+
+fetch('/poll')
+  .then(response => response.json())
+  .then(polljson => {
+    poll = polljson;
+    console.log(poll);
+    main();
+  });
+
+
 
 // Traverse and decorate JSON
 function recurse(qid, order) {
@@ -217,6 +212,9 @@ function prev() {
 
 function init() {
 
+  paths = poll["paths"];
+  questions = poll["roots"].concat(poll["children"]);
+
   // Pair answer with probability
   questions.forEach(function(q) {
      q["tuples"] = q["answers"].map(function(a,i) {
@@ -331,12 +329,6 @@ function init() {
 function pollToMatrix(){
   let output = {};
 
-
-}
-
-function pollToMatrix(){
-  let output = {};
-
   subtrees.forEach(function (subtree, index) {
 
     let matrix = {};
@@ -427,7 +419,7 @@ function pollToMatrix(){
   epsilon_per_subtree[subtree[0]["qid"]] = potential_epsilon;
 
 
-});
+  });
   return output;
 }
 
@@ -621,15 +613,16 @@ function randomizedResponse(m, given_answers) {
 }
 
 function submit(){
-
-
+  let div = document.getElementById("container");
+  div.style.visibility='hidden';
+  document.getElementById('title').innerHTML='THANK YOU!';
   console.log("SENDING RESPONSES");
 
 }
 
 function constantTimePostProcessing(){
-  matrices_to_use = {};
-  answers_to_use = {};
+  let matrices_to_use = {};
+  let answers_to_use = {};
 
   // WARNING!
   // Be sure to make loop constant time, no loops on actual data
@@ -645,25 +638,40 @@ function constantTimePostProcessing(){
 
   console.log("Input is ", matrices_to_use, answers_to_use);
   rr = randomizedResponse(matrices_to_use, answers_to_use);
+
+  fetch('/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json;charset=utf-8'
+          },
+          body: JSON.stringify(rr)
+        }).then(response => console.log(response));
 }
 
 function post(){
   console.log("POST ", rr)
 }
 
+function main(){
+  init();
+  random_matrices = randomMatrix();
+  random_answers = fullRandom(random_matrices);
+  matrices = pollToMatrix();
+  rr = undefined;
+  render();
+
+  // TIMEOUT
+  setTimeout(constantTimePostProcessing, timeout);
+  //EVERYTHING AFTER TIMEOUT MUST BE CONSTANT TIME!
+}
+
+
 
 //GET
-init();
-var random_matrices = randomMatrix();
-var random_answers = fullRandom(random_matrices);
-var matrices = pollToMatrix();
-var rr = undefined;
-render();
 
 
-// TIMEOUT
-setTimeout(constantTimePostProcessing, timeout);
-//EVERYTHING AFTER TIMEOUT MUST BE CONSTANT TIME!
+
+
 
 </script>
 </body>
