@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<style>
+  #state {
+      padding-top: 1em;
+  }
+</style>
+<head><title>Randori: Poll Editor</title></head>
+<body>
+<h1 id="title">Poll Editor</h1>
+<div id="container">
+  <button onclick="import_poll()">Import poll...</button>
+  <button onclick="export_poll()">Export poll...</button>
+  <div id="questions">
+  <h2>Root Questions</h2>
+    <ul id="root_list">
+    </ul>
+    <button onclick="newQuestion()">Add question</button>
+    </div>
+    <div id="follow-ups">
+      <h2>Follow-ups</h2>
+      <ul id="follow-ups-list"></ul>
+      <button onclick="newFollowUp()">Add follow-up question</button>
+    </div>
+
+</div>
+
+<script>
+
+var counter = 1;
+var follow_up_counter = 1;
+
+
+function newQuestion() {
+    createQuestion("", "");
+
+  }
+
+function newFollowUp() {
+  createFollowUp("","","","");
+
+}
+
+function createQuestion(q, a){
+  var question = document.createElement("input");
+  var answers = document.createElement("textarea");
+  var elem = document.createElement("li");
+  var question_label = document.createElement("label");
+  var answer_label = document.createElement("label");
+  var id_label = document.createElement("label");
+  var remove_button = document.createElement("button");
+  var order = document.createElement("input")
+
+  question_label.innerHTML = "Question: ";
+  answer_label.innerHTML = "Answer |  Fraction: "
+  id_label.innerHTML = "id=Q"+counter;
+  remove_button.innerHTML = "Delete";
+
+  elem.id = "question"+counter;
+  question.placeholder = "Question "+counter;
+  question.type = "text";
+  question.id = "question"+counter+"textarea";
+  answers.placeholder = "One answer alternative per row";
+  answers.id = "answers"+counter;
+  order.type = "number";
+  order.placeholder = "order";
+
+  question.value=q;
+  answers.value=a;
+
+  remove_button.onclick = function remove() {
+    roots.removeChild(elem);
+    }
+
+  elem.appendChild(order);
+  elem.appendChild(id_label);
+  elem.appendChild(question_label); 
+  elem.appendChild(question);
+  elem.appendChild(answer_label);
+  elem.appendChild(answers);
+  elem.appendChild(remove_button);
+
+
+  var roots = document.getElementById("root_list");
+  roots.appendChild(elem);
+
+
+  counter++;
+}
+
+function createFollowUp(q, a, p, pa) {
+  var parent = document.createElement("input");
+  var alternative = document.createElement("input");
+  var question = document.createElement("input");
+  var answers = document.createElement("textarea");
+  var elem = document.createElement("li");
+  var question_label = document.createElement("label");
+  var answer_label = document.createElement("label");
+  var id_label = document.createElement("label");
+  var remove_button = document.createElement("button");
+
+  question_label.innerHTML = "Question: ";
+  answer_label.innerHTML = "Answer |  Fraction: "
+  id_label.innerHTML = "id=F"+follow_up_counter;
+  remove_button.innerHTML = "Delete";
+
+  elem.id = "question"+follow_up_counter;
+
+  parent.type = "text";
+  parent.placeholder = "Parent question id";
+  alternative.type = "text";
+  alternative.placeholder = "trigger (answer)"
+
+  question.placeholder = "Follow-up ";
+  question.type = "text";
+  question.id = "question"+follow_up_counter+"textarea";
+  answers.placeholder = "One answer alternative per row";
+  answers.id = "answers"+follow_up_counter;
+
+  question.value=q;
+  answers.value=a;
+  parent.value=p;
+  alternative.value=pa;
+
+  remove_button.onclick = function remove() {
+    followups.removeChild(elem);
+    }
+
+  elem.appendChild(id_label);
+  elem.appendChild(parent);
+  elem.appendChild(alternative);
+  elem.appendChild(question_label); 
+  elem.appendChild(question);
+  elem.appendChild(answer_label);
+  elem.appendChild(answers);
+  elem.appendChild(remove_button);
+
+
+  var followups = document.getElementById("follow-ups-list");
+  followups.appendChild(elem);
+
+  follow_up_counter++;
+
+}
+
+function export_poll() {
+  console.log("export");
+}
+
+function import_poll() {
+  console.log("import");
+}
+
+</script>
+</body>
+</html>
