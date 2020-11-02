@@ -386,9 +386,7 @@ function pollToMatrix(){
       }
 
       });
-    
 
-    console.log("Valid answers",valid_answers);
 
       // For each input, create a transition to each output
       Object.keys(valid_answers).forEach(function (qid){
@@ -497,15 +495,17 @@ function randomMatrix(){
       matrix = {};
 
       Object.keys(valid_answers).forEach(function (compare_qid) {
-        valid_answers[compare_qid].forEach(function (compare_alt){
+        valid_answers[compare_qid].forEach(function (self){
+          matrix[self] = {};
+          valid_answers[compare_qid].forEach(function (compare_alt){
           let target_question = lookup[compare_qid];
 
           // Probability of RANDOM answer
           let random = math.Fraction(1);
           let prob = target_question["compound_probability"][compare_alt].mul(random);
 
-          matrix[compare_alt] = prob; 
-        });
+          matrix[self][compare_alt] = prob; 
+        });});
       });
 
 
@@ -536,47 +536,55 @@ function fullRandom(matrices) {
   // Prepare a response for each question tree
   subtrees.forEach(function (subtree, index) {
     let root_index = subtree[0]["qid"];
-    let transitions = matrices[root_index];
-    let common_denominator = 1;
-    // Find gcd to calculate relative weight for probability distribution
-    for(key in transitions) {
-      let d = transitions[key].d;
-      if(d > common_denominator){
-        common_denominator = d;
-      }
-    }
 
-    // Populate with relative weights
-    let answer_relative_weight = {};
-    for(key in transitions) {
-      let d = transitions[key].d;
-      let n = transitions[key].n;
-      let multiplier = common_denominator/d;
-      let weight = n*multiplier;
-      answer_relative_weight[key] = weight;
-      
-    }
-
-    // Ranges [include, exclude]
-    let count = 1;
-    let ranges = {};
-    for(key in answer_relative_weight){
-      let start = count;
-      let stop = answer_relative_weight[key]+count-1;
-      count +=answer_relative_weight[key];
-
-      for(let i=start; i<=stop; i++){
-          ranges[i] = key;
-      }
-    }
-    //Use cryptographic random [1-gcd] and pick the winner
-    let random = getRandomInt(1,common_denominator);
-    output[root_index] = ranges[random];
+    // Given that any row has same transitions, just pick the first one
+    let i = Object.keys(matrices[root_index])[0]
+    output[root_index] = pickRandom(matrices[root_index][i]);
 
   });
 
   return output;
 
+}
+
+function pickRandom(row){
+  let output = {};
+
+  let common_denominator = 1;
+  // Find gcd to calculate relative weight for probability distribution
+  for(key in row) {
+    let d = row[key].d;
+    if(d > common_denominator){
+      common_denominator = d;
+    }
+  }
+
+  // Populate with relative weights
+  let answer_relative_weight = {};
+  for(key in row) {
+    let d = row[key].d;
+    let n = row[key].n;
+    let multiplier = common_denominator/d;
+    let weight = n*multiplier;
+    answer_relative_weight[key] = weight;
+    
+  }
+
+  // Ranges [include, exclude]
+  let count = 1;
+  let ranges = {};
+  for(key in answer_relative_weight){
+    let start = count;
+    let stop = answer_relative_weight[key]+count-1;
+    count +=answer_relative_weight[key];
+
+    for(let i=start; i<=stop; i++){
+        ranges[i] = key;
+    }
+  }
+  //Use cryptographic random [1-gcd] and pick the winner
+  let random = getRandomInt(1,common_denominator);
+  return ranges[random];
 }
 
 
@@ -590,10 +598,6 @@ function randomizedResponse(m, given_answers) {
     let matrix = m[root_index];
     let transitions = matrix[real];
     let common_denominator = 1;
-    console.log("Input ", real);
-
-    console.log("COIN FLIP");
-    console.log("Transition matrix is ", transitions);
 
     // Find gcd to calculate relative weight for probability distribution
     for(key in transitions) {
@@ -630,11 +634,6 @@ function randomizedResponse(m, given_answers) {
     //Use cryptographic random [1-gcd] and pick the winner
     let random = getRandomInt(1,common_denominator);
     output[root_index] = ranges[random];
-
-    console.log("Output ", output[root_index]);
-
-  
-
   }
 
   return output;
