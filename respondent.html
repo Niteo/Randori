@@ -458,30 +458,37 @@ function randomMatrix(){
 
     subtree.forEach(function (question) {
 
-      let temp_answers = question["answers"].slice();
-      
-      // Remove alternatives that aren't leaves
-      if(question["to_remove"]){
-        let remove_me = question["answers"].indexOf(question["to_remove"]);
-        temp_answers.splice(remove_me, 1);
-      } 
-
-      // If root
-      if(poll["order"].includes(question["qid"])){
+      if(hasNoFollowUps(question["qid"]) && root_indices.includes(question["qid"])){
         root_index = question["qid"];
-        valid_answers[root_index] = temp_answers;
-      } else {
-        let to_use = [];
+        valid_answers[root_index]=question["answers"];
+        valid_answers_per_subtree[root_index] = question["answers"];
+      } else{
 
-        ans_to_compound[question["qid"]] = {};
-        temp_answers.forEach(function (ans) {
-          let name = question["answer_prefix"]+ans;
-          to_use.push(name);
+        let temp_answers = question["answers"].slice();
+        
+        // Remove alternatives that aren't leaves
+        if(question["to_remove"]){
+          let remove_me = question["answers"].indexOf(question["to_remove"]);
+          temp_answers.splice(remove_me, 1);
+        } 
 
-          ans_to_compound[question["qid"]][ans] = name;
-        });
+        // If root
+        if(poll["order"].includes(question["qid"])){
+          root_index = question["qid"];
+          valid_answers[root_index] = temp_answers;
+        } else {
+          let to_use = [];
 
-        valid_answers[question["qid"]] = to_use;
+          ans_to_compound[question["qid"]] = {};
+          temp_answers.forEach(function (ans) {
+            let name = question["answer_prefix"]+ans;
+            to_use.push(name);
+
+            ans_to_compound[question["qid"]][ans] = name;
+          });
+
+          valid_answers[question["qid"]] = to_use;
+        }
       }
 
       });
