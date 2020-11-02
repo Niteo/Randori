@@ -700,8 +700,9 @@ function main(){
   matrices = pollToMatrix();
   rr = undefined;
 
+  illegal_row_found = false;
+
   for(root_index in random_matrices){
-    console.log('Question index ',root_index)
     // All rows have equal distributions, pick the first one
     let i = Object.keys(random_matrices[root_index])[0];
     let row = random_matrices[root_index][i];
@@ -710,7 +711,9 @@ function main(){
     for(k in row){
       sum += row[k];
     }
-    console.log('Row sums to ',sum);
+    if(sum != 1){
+      illegal_row_found = true;
+    }
   }
   
 
@@ -726,7 +729,12 @@ function main(){
     div.style.visibility='hidden';
     document.getElementById('title').innerHTML='BUDGET TOO LOW';
 
-  } else {
+  } else if(illegal_row_found){
+    let div = document.getElementById("container");
+    div.style.visibility='hidden';
+    document.getElementById('title').innerHTML='INVALID POLL';
+    document.getElementById('epsilon').innerHTML='';
+  }else {
     budget-=cost;
     render();
     // TIMEOUT
