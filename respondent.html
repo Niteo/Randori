@@ -14,6 +14,7 @@
   <button onclick="submit()">submit</button>
   <blockquote id="state"></blockquote>
 </div>
+<h3 id="epsilon"></h3>
 <script src="https://unpkg.com/mathjs@7.2.0/dist/math.min.js"></script>
 
 <script>
@@ -50,6 +51,9 @@ var random_matrices = undefined;
 var random_answers = undefined;
 var matrices = undefined;
 var rr = undefined;
+
+var budget = 100; // Expressed as natural logarithm ln(budget)
+var truth_threshold = 0.99
 
 
 var poll = {}
@@ -403,6 +407,11 @@ function pollToMatrix(){
                 let target_question = lookup[compare_qid];
 
                 let truth = math.Fraction(lookup[root_index]["truth"]);
+
+                // DEFENSE: Truth too high? Always give random (0/1 probability truth)
+                if(truth >= truth_threshold){
+                  truth = math.Fraction(0,1);
+                }
                 // Probability of RANDOM answer
                 let random = math.Fraction(1).sub(truth);
                 let prob = target_question["compound_probability"][compare_alt].mul(random);
@@ -453,6 +462,7 @@ function randomMatrix(){
     let root_index;
     let potential_epsilon = undefined;
     let valid_answers = {};
+    let is_flat = false;
 
     subtree.forEach(function (question) {
 
@@ -460,6 +470,7 @@ function randomMatrix(){
         root_index = question["qid"];
         valid_answers[root_index]=question["answers"];
         valid_answers_per_subtree[root_index] = question["answers"];
+        is_flat=true;
       } else{
 
         let temp_answers = question["answers"].slice();
@@ -493,20 +504,22 @@ function randomMatrix(){
 
       // For any input, create a transition to each output
       matrix = {};
+      // For each input, create a transition to each output
+      Object.keys(valid_answers).forEach(function (qid){
+        valid_answers[qid].forEach(function (self){
 
-      Object.keys(valid_answers).forEach(function (compare_qid) {
-        valid_answers[compare_qid].forEach(function (self){
           matrix[self] = {};
-          valid_answers[compare_qid].forEach(function (compare_alt){
-          let target_question = lookup[compare_qid];
 
-          // Probability of RANDOM answer
-          let random = math.Fraction(1);
-          let prob = target_question["compound_probability"][compare_alt].mul(random);
-
-          matrix[self][compare_alt] = prob; 
-        });});
+            Object.keys(valid_answers).forEach(function (compare_qid) {
+              valid_answers[compare_qid].forEach(function (compare_alt){
+                let target_question = lookup[compare_qid];
+                let prob = target_question["compound_probability"][compare_alt];
+                matrix[self][compare_alt] = prob; 
+              });
+            });
+        });
       });
+
 
 
   output[root_index]=matrix;
@@ -686,11 +699,40 @@ function main(){
   random_answers = fullRandom(random_matrices);
   matrices = pollToMatrix();
   rr = undefined;
-  render();
 
-  // TIMEOUT
-  setTimeout(constantTimePostProcessing, timeout);
-  //EVERYTHING AFTER TIMEOUT MUST BE CONSTANT TIME!
+  for(root_index in random_matrices){
+    console.log('Question index ',root_index)
+    // All rows have equal distributions, pick the first one
+    let i = Object.keys(random_matrices[root_index])[0];
+    let row = random_matrices[root_index][i];
+    let sum = math.fraction(0,1);
+
+    for(k in row){
+      sum += row[k];
+    }
+    console.log('Row sums to ',sum);
+  }
+  
+
+  let cost = 0;
+  for(k in epsilon_per_subtree){
+    cost+=epsilon_per_subtree[k];
+  }
+
+  document.getElementById('epsilon').innerHTML='Cost is: '+math.log(cost)+' (ln('+cost+'))';
+
+  if(cost > budget){
+    let div = document.getElementById("container");
+    div.style.visibility='hidden';
+    document.getElementById('title').innerHTML='BUDGET TOO LOW';
+
+  } else {
+    budget-=cost;
+    render();
+    // TIMEOUT
+    setTimeout(constantTimePostProcessing, timeout);
+    //EVERYTHING AFTER TIMEOUT MUST BE CONSTANT TIME!
+  }
 }
 
 
