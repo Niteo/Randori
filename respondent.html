@@ -407,11 +407,6 @@ function pollToMatrix(){
                 let target_question = lookup[compare_qid];
 
                 let truth = math.Fraction(lookup[root_index]["truth"]);
-
-                // DEFENSE: Truth too high? Always give random (0/1 probability truth)
-                if(truth >= truth_threshold){
-                  truth = math.Fraction(0,1);
-                }
                 // Probability of RANDOM answer
                 let random = math.Fraction(1).sub(truth);
                 let prob = target_question["compound_probability"][compare_alt].mul(random);
@@ -700,7 +695,7 @@ function main(){
   matrices = pollToMatrix();
   rr = undefined;
 
-  illegal_row_found = false;
+  let illegal_row_found = false;
 
   for(root_index in random_matrices){
     // All rows have equal distributions, pick the first one
@@ -715,12 +710,23 @@ function main(){
       illegal_row_found = true;
     }
   }
+
+  let ok_truth = true;
+
+  for(root_index in poll["roots"]){
+    let root = questions[root_index]
+    let frac = math.fraction(root["truth"]);
+    if(frac > truth_threshold){
+      ok_truth = false;
+    }
+  }
   
 
   let cost = 0;
   for(k in epsilon_per_subtree){
     cost+=epsilon_per_subtree[k];
   }
+
 
   document.getElementById('epsilon').innerHTML='Cost is: '+math.log(cost)+' (ln('+cost+'))';
 
@@ -729,7 +735,7 @@ function main(){
     div.style.visibility='hidden';
     document.getElementById('title').innerHTML='BUDGET TOO LOW';
 
-  } else if(illegal_row_found){
+  } else if(illegal_row_found || !ok_truth){
     let div = document.getElementById("container");
     div.style.visibility='hidden';
     document.getElementById('title').innerHTML='INVALID POLL';
