@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 from flask import Flask, send_from_directory, request
@@ -15,27 +15,29 @@ import operator
 import pandas as pd
 import seaborn as sns
 
+import ast # Decode from unicode
 
-# In[2]:
+
+# In[ ]:
 
 
 file_name = 'respondent.html'
 icon_name = 'favicon.ico'
 
 
-# In[3]:
+# In[ ]:
 
 
 app = Flask(__name__)
 
 
-# In[4]:
+# In[ ]:
 
 
 get_ipython().magic(u'run logic.ipynb')
 
 
-# In[5]:
+# In[ ]:
 
 
 #Example JSON
@@ -69,7 +71,7 @@ _example_json_poll = {"children": [
 _example_json_poll
 
 
-# In[6]:
+# In[ ]:
 
 
 # Helper functions and logic
@@ -80,13 +82,13 @@ matrices=poll_info['matrices']
 lookup = poll_info['lookup']
 
 
-# In[7]:
+# In[ ]:
 
 
 responses =[]
 
 
-# In[8]:
+# In[ ]:
 
 
 def results():
@@ -127,7 +129,7 @@ def results():
             print alternative,': ',p_a_given_true*response_frequency[question][alternative]
 
 
-# In[9]:
+# In[ ]:
 
 
 # Annotated functions
@@ -157,12 +159,16 @@ def getResults():
     content = request.json
     print content
     
-    responses.append(content)
-    #results()
+    decoded = {}
+    for key in content:
+        decoded[int(key)]=content[key]
+    
+    responses.append(decoded)
+    results()
     return ''
 
 
-# In[10]:
+# In[ ]:
 
 
 #Run server
