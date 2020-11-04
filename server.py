@@ -86,6 +86,7 @@ lookup = poll_info['lookup']
 
 
 responses =[]
+result_filtered = {}
 
 
 # In[ ]:
@@ -107,12 +108,13 @@ def results():
         for match in to_match:
             response_frequency[question][match] = len(response_frame[response_frame[question]==match])
 
+    result_filtered['Respondents']=len(responses)
 
     #Filter with Bayes' theorem
     for question in response_frequency.keys():
         #P(True)
         p_true = Fraction(lookup[question]['truth'])
-        print 'Question: ', lookup[question]['question']
+        result_filtered[lookup[question]['question']] = {}
 
         #Bayes' theorem: p(A|True) = p(True|A)*p(A) / p(True)
         for alternative in response_frequency[question].keys():
@@ -126,7 +128,8 @@ def results():
             p_a_given_true = (p_true_given_a*p_a)/p_true
 
             # Save percentage and use on pop!
-            print alternative,': ',p_a_given_true*response_frequency[question][alternative]
+            true_a = float(p_a_given_true*p_true)*response_frequency[question][alternative]
+            result_filtered[lookup[question]['question']][alternative] = true_a
 
 
 # In[ ]:
@@ -152,7 +155,7 @@ def setPoll():
 
 @app.route('/results')
 def showResults():
-    return {}
+    return result_filtered
 
 @app.route('/submit', methods=['POST'])
 def getResults():
