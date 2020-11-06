@@ -14,33 +14,149 @@
   <h2>Root Questions</h2>
     <ul id="root_list">
     </ul>
-    <button onclick="newQuestion()">Add question</button>
+    <button onclick="newQuestionUI()">Add question</button>
     </div>
     <div id="follow-ups">
       <h2>Follow-ups</h2>
       <ul id="follow-ups-list"></ul>
-      <button onclick="newFollowUp()">Add follow-up question</button>
+      <button onclick="newFollowUpUI()">Add follow-up question</button>
     </div>
 
 </div>
 
 <script>
 
+var poll = {"children": [
+{"answers": ["B+", "AB+", "O-", "A-", "Other"],
+   "probability": ["1/5", "1/5", "1/5", "1/5", "1/5"],
+   "qid": 1,
+   "question": "Specify..."},
+  {"answers": ["B-", "AB-"],
+   "probability": ["3/4", "1/4"],
+   "qid": 2,
+   "question": "Specify further..."}],
+ "paths": [[0, "Other", 1], [1, "Other", 2]],
+ "roots": [{"answers": ["O+", "A+", "Other"],
+   "probability": ["1/3", "1/3", "1/3"],
+   "qid": 0,
+   "truth": "1/2",
+   "question": "Blood type?"}, 
+   {"answers": ["A", "B", "C"],
+   "probability": ["1/3", "1/3", "1/3"],
+   "qid": 4,
+   "truth": "3/4",
+   "question": "Q2?"},
+   {"answers": ["1", "2"],
+   "probability": ["1/2", "1/2"],
+   "qid": 3,   
+   "truth": "1/3",
+   "question": "1 or 2?"}],
+ "order": [0, 4, 3]
+}
+
 var counter = 1;
 var follow_up_counter = 1;
+var paths = [];
+var roots = [];
+var children = [];
+
+function toJSON(){
+  let output = {};
+  let order = [];
+
+  //Populate data from UI
 
 
-function newQuestion() {
-    createQuestion("", "");
+  // Assign
+  output['children'] = children;
+  output['roots'] = roots;
+  output['paths'] = paths;
+  output['order'] = order;
+  return output;
+}
 
-  }
+function fromJSON(content){
+  let order = [];
+  children = [];
+  roots = [];
+  paths = [];
 
-function newFollowUp() {
-  createFollowUp("","","","");
+  children = content['children'];
+  roots = content['roots'];
+  paths = content['paths'];
+  order = content['order'];
+
+  // Populate UI
+  roots.forEach(function (root){
+    createQuestionUI(root['question'], root['answers'],root['qid']);
+  });
+
+  let count = 1;
+  order.forEach(function (qid){
+    document.getElementById("question"+qid+"order").value = count;
+    count++;
+
+  });
+
+  children.forEach(function (child){
+    //Find path(s)
+    parents = [];
+
+    paths.forEach(function (path){
+      if(path[2]==child['qid']){
+        parents.push((path[0]),path[1]);
+      }
+    });
+    createFollowUpUI(child['question'], child['answers'], child['qid'], parents, parents);
+  });
+
+  
+}
+
+
+
+
+// Graphical representation
+function newQuestionUI() {
+  createQuestionUI("", "", counter);
+  counter++;
 
 }
 
-function createQuestion(q, a){
+// Graphical representation
+function newFollowUpUI() {
+  createFollowUpUI("","","","", follow_up_counter);
+  follow_up_counter++;
+
+}
+
+// Logic representation
+function createQuestion(q, a, i){
+  let question = {};
+  question['question'] = q;
+  question['qid'] = i;
+
+  //Parse to split answers from probability
+  question['answers'] = a;
+  question['probability'] = a;
+
+
+  return question;
+}
+
+// Logical representation
+function createPath(p, pa, c){
+  paths.push([p,pa,c]);
+}
+
+// Logic representation
+function createFollowUp(q, a, i, pid, pa){
+  let question = createQuestion(q,a,i);
+  createPath(pid,pa,i);
+}
+
+// createQuestionUI(Question string, Answer string)
+function createQuestionUI(q, a, id){
   var question = document.createElement("input");
   var answers = document.createElement("textarea");
   var elem = document.createElement("li");
@@ -52,17 +168,18 @@ function createQuestion(q, a){
 
   question_label.innerHTML = "Question: ";
   answer_label.innerHTML = "Answer |  Fraction: "
-  id_label.innerHTML = "id=Q"+counter;
+  id_label.innerHTML = "id=Q"+id;
   remove_button.innerHTML = "Delete";
 
-  elem.id = "question"+counter;
-  question.placeholder = "Question "+counter;
+  elem.id = "question"+id;
+  question.placeholder = "Question "+id;
   question.type = "text";
-  question.id = "question"+counter+"textarea";
+  question.id = "question"+id+"textarea";
   answers.placeholder = "One answer alternative per row";
-  answers.id = "answers"+counter;
+  answers.id = "answers"+id;
   order.type = "number";
   order.placeholder = "order";
+  order.id = "question"+id+"order";
 
   question.value=q;
   answers.value=a;
@@ -82,12 +199,10 @@ function createQuestion(q, a){
 
   var roots = document.getElementById("root_list");
   roots.appendChild(elem);
-
-
-  counter++;
 }
 
-function createFollowUp(q, a, p, pa) {
+// createFollowUpUI(Question string, Answer string, Parent id, Parent answer string)
+function createFollowUpUI(q, a, id, p, pa) {
   var parent = document.createElement("input");
   var alternative = document.createElement("input");
   var question = document.createElement("input");
@@ -100,10 +215,10 @@ function createFollowUp(q, a, p, pa) {
 
   question_label.innerHTML = "Question: ";
   answer_label.innerHTML = "Answer |  Fraction: "
-  id_label.innerHTML = "id=F"+follow_up_counter;
+  id_label.innerHTML = "id=F"+id;
   remove_button.innerHTML = "Delete";
 
-  elem.id = "question"+follow_up_counter;
+  elem.id = "question"+id;
 
   parent.type = "text";
   parent.placeholder = "Parent question id";
@@ -112,9 +227,9 @@ function createFollowUp(q, a, p, pa) {
 
   question.placeholder = "Follow-up ";
   question.type = "text";
-  question.id = "question"+follow_up_counter+"textarea";
+  question.id = "question"+id+"textarea";
   answers.placeholder = "One answer alternative per row";
-  answers.id = "answers"+follow_up_counter;
+  answers.id = "answers"+id;
 
   question.value=q;
   answers.value=a;
@@ -123,7 +238,7 @@ function createFollowUp(q, a, p, pa) {
 
   remove_button.onclick = function remove() {
     followups.removeChild(elem);
-    }
+  }
 
   elem.appendChild(id_label);
   elem.appendChild(parent);
@@ -138,8 +253,6 @@ function createFollowUp(q, a, p, pa) {
   var followups = document.getElementById("follow-ups-list");
   followups.appendChild(elem);
 
-  follow_up_counter++;
-
 }
 
 function export_poll() {
@@ -148,6 +261,7 @@ function export_poll() {
 
 function import_poll() {
   console.log("import");
+  fromJSON(poll);
 }
 
 </script>
