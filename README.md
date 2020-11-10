@@ -13,8 +13,8 @@ Required python libraries: flask, pandas, matplotlib, scipy, os, json, itertools
 If any library is missing, use pip install <library> before proceeding.
 
 1) Start the server: python server.py
-2) Let respondents visit <serverlocation>
-3) Visit <serverlocation>/results to view the responses
+2) Let respondents visit your server, for example http://127.0.0.1:5000/
+3) Visit yourserver/results to view the responses, for example http://127.0.0.1:5000/results 
 
 ## Notebook Installation:
 Install jupyter notebook (required for Simulation Environment) for your OS using the instructions found at:
