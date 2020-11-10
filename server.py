@@ -5,17 +5,13 @@
 
 
 from flask import Flask, send_from_directory, request
-import matplotlib.pyplot as plt
-import numpy.random as rnd
-import numpy as np
-from scipy import stats
 import os
 import json
 import operator
 import pandas as pd
-import seaborn as sns
 
 import ast # Decode from unicode
+import logic as lgc
 
 
 # In[ ]:
@@ -29,12 +25,6 @@ icon_name = 'favicon.ico'
 
 
 app = Flask(__name__)
-
-
-# In[ ]:
-
-
-get_ipython().magic(u'run logic.ipynb')
 
 
 # In[ ]:
@@ -76,7 +66,7 @@ _example_json_poll
 
 # Helper functions and logic
 json_poll = json.dumps(_example_json_poll)
-poll_info = parsePoll(_example_json_poll)
+poll_info = lgc.parsePoll(_example_json_poll)
 subtrees=poll_info['subtrees']
 matrices=poll_info['matrices']
 lookup = poll_info['lookup']
