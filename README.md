@@ -2,17 +2,26 @@
 Local Differential Privacy for All!
 
 ## Components:
-- Backend Server
-- Simulation Environment
-- Poll Manager GUI
-- Poll Collection GUI
+- Backend Server (server.py)
+- Poll Editor (editor.html)
+- Respondent UI (respondent.html)
+- Simulation Environment (simulation_environment.ipynb)
 
-## Installation:
-Install jupyter notebook (needed for Simulation Environment) for your OS using the instructions found at:
+## Usage:
+Required python libraries: flask, pandas, matplotlib, scipy, os, json, itertools, fractions, operator
+
+If any library is missing, use pip install <library> before proceeding.
+
+1) Start the server: python server.py
+2) Let respondents visit <serverlocation>
+3) Visit <serverlocation>/results to view the responses
+
+## Notebook Installation:
+Install jupyter notebook (required for Simulation Environment) for your OS using the instructions found at:
 
 https://github.com/Niteo/miniconda-notebook
 
-## Package dependencies:
+## Notebook dependencies:
  - python=2.7
  - ipywidgets=7.4.2
  - numpy=1.15.4
