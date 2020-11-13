@@ -76,6 +76,8 @@ function toJSON(){
 }
 
 function fromJSON(content){
+  let max = Number.MIN_VALUE;
+  let fmax = Number.MIN_VALUE;
   let order = [];
   children = [];
   roots = [];
@@ -86,9 +88,15 @@ function fromJSON(content){
   paths = content['paths'];
   order = content['order'];
 
+
+
   // Populate UI
   roots.forEach(function (root){
-    createQuestionUI(root['question'], root['answers'], root['probability'], root['qid']);
+    let qid = root['qid'];
+    createQuestionUI(root['question'], root['answers'], root['probability'], qid);
+    if(qid > max){
+      max = qid;
+    }
   });
 
   let count = 1;
@@ -100,17 +108,25 @@ function fromJSON(content){
 
   children.forEach(function (child){
     //Find path(s)
-    parents = [];
+    let parents = [];
+    let fqid = child['qid'];
 
     paths.forEach(function (path){
-      if(path[2]==child['qid']){
+      if(path[2]==fqid){
         parents.push((path[0]),path[1]);
       }
     });
-    createFollowUpUI(child['question'], child['answers'], child['probability'],child['qid'], parents, parents);
+    createFollowUpUI(child['question'], child['answers'], child['probability'],fqid, parents, parents);
+
+    if(fqid > fmax){
+      fmax = fqid;
+    }
   });
 
-  
+
+
+  counter = max;
+  follow_up_counter = fmax;
 }
 
 
@@ -273,6 +289,8 @@ function export_poll() {
 }
 
 function import_poll() {
+  cleanGUI();
+
   console.log("import");
   fromJSON(poll);
 }
