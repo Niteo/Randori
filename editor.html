@@ -159,6 +159,7 @@ function createFollowUp(q, a, i, pid, pa){
 function createQuestionUI(q, a, id){
   var question = document.createElement("input");
   var answers = document.createElement("textarea");
+  var probabilities = document.createElement("textarea");
   var elem = document.createElement("li");
   var question_label = document.createElement("label");
   var answer_label = document.createElement("label");
@@ -177,12 +178,15 @@ function createQuestionUI(q, a, id){
   question.id = "question"+id+"textarea";
   answers.placeholder = "One answer alternative per row";
   answers.id = "answers"+id;
+  probabilities.placeholder = "Proability to choose corresponding answer";
+  probabilities.id = "probabilities"+id;
   order.type = "number";
   order.placeholder = "order";
   order.id = "question"+id+"order";
 
   question.value=q;
   answers.value=a;
+  probabilities.value=a;
 
   remove_button.onclick = function remove() {
     roots.removeChild(elem);
@@ -194,6 +198,7 @@ function createQuestionUI(q, a, id){
   elem.appendChild(question);
   elem.appendChild(answer_label);
   elem.appendChild(answers);
+  elem.appendChild(probabilities);
   elem.appendChild(remove_button);
 
 
@@ -207,6 +212,7 @@ function createFollowUpUI(q, a, id, p, pa) {
   var alternative = document.createElement("input");
   var question = document.createElement("input");
   var answers = document.createElement("textarea");
+  var probabilities = document.createElement("textarea");
   var elem = document.createElement("li");
   var question_label = document.createElement("label");
   var answer_label = document.createElement("label");
@@ -230,11 +236,15 @@ function createFollowUpUI(q, a, id, p, pa) {
   question.id = "question"+id+"textarea";
   answers.placeholder = "One answer alternative per row";
   answers.id = "answers"+id;
+  probabilities.placeholder = "Proability to choose corresponding answer";
+  probabilities.id = "probabilities"+id;
 
   question.value=q;
   answers.value=a;
+  probabilities.value=a;
   parent.value=p;
   alternative.value=pa;
+
 
   remove_button.onclick = function remove() {
     followups.removeChild(elem);
@@ -247,6 +257,7 @@ function createFollowUpUI(q, a, id, p, pa) {
   elem.appendChild(question);
   elem.appendChild(answer_label);
   elem.appendChild(answers);
+  elem.appendChild(probabilities);
   elem.appendChild(remove_button);
 
 
