@@ -170,6 +170,8 @@ function createQuestionUI(q, a, prob, id){
   id_label.innerHTML = "id=Q"+id;
   remove_button.innerHTML = "Delete";
 
+  remove_button.id = "remove"+id;
+
   elem.id = "question"+id;
   question.placeholder = "Question "+id;
   question.type = "text";
@@ -222,6 +224,8 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
   id_label.innerHTML = "id=F"+id;
   remove_button.innerHTML = "Delete";
 
+  remove_button.id = "removeF"+id;
+
   elem.id = "question"+id;
 
   parent.type = "text";
@@ -271,6 +275,25 @@ function export_poll() {
 function import_poll() {
   console.log("import");
   fromJSON(poll);
+}
+
+function cleanGUI(){
+
+  
+  let questions = document.getElementById("root_list");
+  let followups = document.getElementById("follow-ups-list");
+
+  let buttons = questions.querySelectorAll("button");
+  let buttons_follow = followups.querySelectorAll("button");
+
+  buttons.forEach(function (button) {
+    button.click();
+  });
+
+  buttons_follow.forEach(function (button) {
+    button.click();
+  });
+
 }
 
 </script>
