@@ -72,7 +72,10 @@ function toJSON(){
   output['roots'] = roots;
   output['paths'] = paths;
   output['order'] = order;
-  return output;
+
+  console.log(output);
+
+  return JSON.stringify(output);
 }
 
 function fromJSON(content){
@@ -285,14 +288,20 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
 }
 
 function export_poll() {
-  console.log("export");
+  let name = prompt("Enter a file name: ", "poll.json");
+  let contentType = "application/json;charset=utf-8;";
+  let a = document.createElement('a');
+  a.download = name;
+  a.href = 'data:' + contentType + ',' + encodeURIComponent(toJSON());
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a)
 }
 
 function import_poll() {
   cleanGUI();
-
-  console.log("import");
-  fromJSON(poll);
+  return fromJSON(poll); 
 }
 
 function cleanGUI(){
