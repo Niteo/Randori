@@ -88,7 +88,7 @@ function fromJSON(content){
 
   // Populate UI
   roots.forEach(function (root){
-    createQuestionUI(root['question'], root['answers'],root['qid']);
+    createQuestionUI(root['question'], root['answers'], root['probability'], root['qid']);
   });
 
   let count = 1;
@@ -107,7 +107,7 @@ function fromJSON(content){
         parents.push((path[0]),path[1]);
       }
     });
-    createFollowUpUI(child['question'], child['answers'], child['qid'], parents, parents);
+    createFollowUpUI(child['question'], child['answers'], child['probability'],child['qid'], parents, parents);
   });
 
   
@@ -118,27 +118,25 @@ function fromJSON(content){
 
 // Graphical representation
 function newQuestionUI() {
-  createQuestionUI("", "", counter);
+  createQuestionUI("", "", "", counter);
   counter++;
 
 }
 
 // Graphical representation
 function newFollowUpUI() {
-  createFollowUpUI("","","","", follow_up_counter);
+  createFollowUpUI("","","","", "", follow_up_counter);
   follow_up_counter++;
 
 }
 
 // Logic representation
-function createQuestion(q, a, i){
+function createQuestion(q, a, prob, i){
   let question = {};
   question['question'] = q;
   question['qid'] = i;
-
-  //Parse to split answers from probability
   question['answers'] = a;
-  question['probability'] = a;
+  question['probability'] = prob;
 
 
   return question;
@@ -150,13 +148,13 @@ function createPath(p, pa, c){
 }
 
 // Logic representation
-function createFollowUp(q, a, i, pid, pa){
-  let question = createQuestion(q,a,i);
+function createFollowUp(q, a, prob, i, pid, pa){
+  let question = createQuestion(q, a, prob, i);
   createPath(pid,pa,i);
 }
 
-// createQuestionUI(Question string, Answer string)
-function createQuestionUI(q, a, id){
+// createQuestionUI(Question string, Answers string, Probabilities string, Id int)
+function createQuestionUI(q, a, prob, id){
   var question = document.createElement("input");
   var answers = document.createElement("textarea");
   var probabilities = document.createElement("textarea");
@@ -186,7 +184,7 @@ function createQuestionUI(q, a, id){
 
   question.value=q;
   answers.value=a;
-  probabilities.value=a;
+  probabilities.value=prob;
 
   remove_button.onclick = function remove() {
     roots.removeChild(elem);
@@ -206,8 +204,8 @@ function createQuestionUI(q, a, id){
   roots.appendChild(elem);
 }
 
-// createFollowUpUI(Question string, Answer string, Parent id, Parent answer string)
-function createFollowUpUI(q, a, id, p, pa) {
+// createFollowUpUI(Question string, Answer string, Probabilities string, Parent id, Parent answer string)
+function createFollowUpUI(q, a, prob, id, p, pa) {
   var parent = document.createElement("input");
   var alternative = document.createElement("input");
   var question = document.createElement("input");
@@ -241,7 +239,7 @@ function createFollowUpUI(q, a, id, p, pa) {
 
   question.value=q;
   answers.value=a;
-  probabilities.value=a;
+  probabilities.value=prob;
   parent.value=p;
   alternative.value=pa;
 
