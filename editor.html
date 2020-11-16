@@ -78,21 +78,20 @@ input:checked + .slider:before {
 
 </style>
 <head><title>Randori: Poll Editor</title></head>
-<nav
-><div><button onclick="import_poll()">Import poll...</button>
-  <button onclick="export_poll()">Export poll...</button>
+<nav>
+  <div><center><button onclick="import_poll()">Import poll...</button>
+  <button onclick="export_poll()">Export poll...</button></center>
 </div>
-    <hr>
-    <div><span style="font-size:24px">Edit</span>
+    <div style="margin-top: 20px;"><center><span style="font-size:24px">Edit</span>
       <!-- Rounded switch -->
       <label class="switch">
         <input type="checkbox" id="toggler" onchange="toggle()">
         <span class="slider round"></span>
-      </label> <span style="font-size:24px">Explore</span>
+      </label> <span style="font-size:24px">Explore</span></center>
   </div>
 </nav>
 <body>
-<h1 id="title">Poll Editor</h1>
+<hr>
 <div id="container">
   <div id="questions">
   <h2>Root Questions</h2>
@@ -105,17 +104,18 @@ input:checked + .slider:before {
       <ul id="follow-ups-list"></ul>
       <button onclick="newFollowUpUI()">Add follow-up question</button>
     </div>
+    
 </div>
 
 <div id="explorer" hidden="true">
-<div><h2>Pick a Question</h2></div>
-<input list="question-list" onchange="chosen()"></input>
-<datalist id="data-list">
-  <!-- <option value="Internet Explorer"> -->
-</datalist>
-
-<div id="question-tree"></div>
-
+  <div><h2>Pick a Question</h2></div>
+<form>
+  <select id="data-list" onchange="chosen()">
+     <option value="placeholder"></option> 
+  </select>
+</form>
+<div id="subtree-container">
+</div
 </div>
 
 <script>
@@ -195,9 +195,38 @@ function toggle(){
 }
 
 function chosen(){
-  let elem = document.getElementById("question-list");
+  let elem = document.getElementById("data-list");
 
-  console.log(elem.value);
+  if(elem && elem!="placeholder"){
+    console.log(elem.value);
+    let qid = elem.value;
+
+    let root = undefined;
+
+    roots.forEach(function (r){
+      if(r['qid']==qid){
+        root = r;
+      }
+    });
+
+    let parent_div = document.getElementById("subtree-container");
+    parent_div.innerHTML = ""; 
+
+    let i = 0;
+    root['answers'].forEach(function (answer){
+      console.log(answer)
+      let div = document.createElement("div");
+      let ans = document.createElement("input");
+      div.innerHTML = answer;
+      ans.value = root['probability'][i];
+
+      div.appendChild(ans);
+      parent_div.appendChild(div);
+
+      i++;
+    });
+
+  }
 }
 
 
@@ -224,8 +253,6 @@ function toJSON(){
   output['roots'] = roots;
   output['paths'] = paths;
   output['order'] = order;
-
-  console.log(output);
 
   return JSON.stringify(output);
 }
@@ -482,6 +509,16 @@ function explorerGUI(){
 
   let explorer = document.getElementById("explorer");
   explorer.hidden=false;
+
+  //Populate GUI with subtrees
+  let datalist = document.getElementById("data-list");
+
+  roots.forEach(function (root){
+    let opt = document.createElement("option");
+    opt.value = root['qid'];
+    opt.innerHTML = root['question'];
+    datalist.appendChild(opt);
+  });
 }
 
 function editGUI(){
