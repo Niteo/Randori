@@ -145,6 +145,8 @@ var paths = [];
 var roots = [];
 var children = [];
 
+var data = undefined;
+
 var input = document.createElement('input');
 input.type = 'file';
 
@@ -168,13 +170,18 @@ input.onchange = e => {
 
 function toggle(){
   let elem = document.getElementById("toggler");
-  console.log(elem.checked)
 
   // Explore mode
   if(elem.checked){
+    data = toJSON();
+    explorerGUI();
 
   } else{ //Edit mode
-    cleanGUI();
+    editGUI();
+
+    if(data != undefined){
+      fromJSON(JSON.parse(data));
+    }
   }
 }
 
@@ -440,6 +447,18 @@ function cleanGUI(){
     button.click();
   });
 
+}
+
+function explorerGUI(){
+  cleanGUI();
+  let element = document.getElementById("container");
+  element.hidden=true;
+}
+
+function editGUI(){
+  cleanGUI();
+  let element = document.getElementById("container");
+  element.hidden=false;
 }
 
 </script>
