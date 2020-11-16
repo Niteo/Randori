@@ -94,26 +94,32 @@ input:checked + .slider:before {
 <hr>
 <div id="container">
   <div id="questions">
-  <h2>Root Questions</h2>
-    <ul id="root_list">
-    </ul>
-    <button onclick="newQuestionUI()">Add question</button>
+  <center><h2>Root Questions</h2></center>
+    <div id="root_list">
+    </div><center>
+    <div style="margin-top: 20px;">
+      <button onclick="newQuestionUI()">Add question</button>
+    </div></center>
     </div>
     <div id="follow-ups">
-      <h2>Follow-ups</h2>
-      <ul id="follow-ups-list"></ul>
-      <button onclick="newFollowUpUI()">Add follow-up question</button>
+      <center><h2>Follow-ups</h2></center>
+      <div id="follow-ups-list"></div>
+      <center><div style="margin-top: 20px;">
+        <button onclick="newFollowUpUI()">Add follow-up question</button>
+      </div></center>
     </div>
     
 </div>
 
 <div id="explorer" hidden="true">
+  <center>
   <div><h2>Pick a Question</h2></div>
-<form>
+</center>
+<center><form>
   <select id="data-list" onchange="chosen()">
      <option value="placeholder"></option> 
   </select>
-</form>
+</form></center>
 <div id="subtree-container">
 </div
 </div>
@@ -225,6 +231,10 @@ function chosen(){
 
       i++;
     });
+
+    let follow_qids = [];
+
+    // Find all follow-ups qids, recursively!
 
   }
 }
@@ -353,6 +363,7 @@ function createFollowUp(q, a, prob, i, pid, pa){
 
 // createQuestionUI(Question string, Answers string, Probabilities string, Id int)
 function createQuestionUI(q, a, prob, id){
+  var container = document.createElement("div");
   var question = document.createElement("input");
   var answers = document.createElement("textarea");
   var probabilities = document.createElement("textarea");
@@ -390,14 +401,16 @@ function createQuestionUI(q, a, prob, id){
     roots.removeChild(elem);
     }
 
-  elem.appendChild(order);
-  elem.appendChild(id_label);
-  elem.appendChild(question_label); 
-  elem.appendChild(question);
-  elem.appendChild(answer_label);
-  elem.appendChild(answers);
-  elem.appendChild(probabilities);
-  elem.appendChild(remove_button);
+  container.appendChild(order);
+  container.appendChild(id_label);
+  container.appendChild(question_label); 
+  container.appendChild(question);
+  container.appendChild(answer_label);
+  container.appendChild(answers);
+  container.appendChild(probabilities);
+  container.appendChild(document.createElement("div")).appendChild(remove_button);
+
+  elem.appendChild(container);
 
 
   var roots = document.getElementById("root_list");
