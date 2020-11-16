@@ -94,7 +94,6 @@ input:checked + .slider:before {
 <body>
 <h1 id="title">Poll Editor</h1>
 <div id="container">
-  
   <div id="questions">
   <h2>Root Questions</h2>
     <ul id="root_list">
@@ -106,6 +105,16 @@ input:checked + .slider:before {
       <ul id="follow-ups-list"></ul>
       <button onclick="newFollowUpUI()">Add follow-up question</button>
     </div>
+</div>
+
+<div id="explorer" hidden="true">
+<div><h2>Pick a Question</h2></div>
+<input list="question-list" onchange="chosen()"></input>
+<datalist id="data-list">
+  <!-- <option value="Internet Explorer"> -->
+</datalist>
+
+<div id="question-tree"></div>
 
 </div>
 
@@ -185,10 +194,27 @@ function toggle(){
   }
 }
 
+function chosen(){
+  let elem = document.getElementById("question-list");
+
+  console.log(elem.value);
+}
+
 
 function toJSON(){
   let output = {};
   let order = [];
+
+  let order_to_qid = {};
+  roots.forEach(function (root) {
+    let qid = root['qid'];
+    let order_input = document.getElementById("question"+qid+"order");
+    order_to_qid[order_input.value] = qid;
+  });
+
+  for(qid in order_to_qid){
+    order.push(order_to_qid[qid]);
+  }
 
   //Populate data from UI
 
@@ -451,14 +477,19 @@ function cleanGUI(){
 
 function explorerGUI(){
   cleanGUI();
-  let element = document.getElementById("container");
-  element.hidden=true;
+  let editor = document.getElementById("container");
+  editor.hidden=true;
+
+  let explorer = document.getElementById("explorer");
+  explorer.hidden=false;
 }
 
 function editGUI(){
   cleanGUI();
   let element = document.getElementById("container");
   element.hidden=false;
+  let explorer = document.getElementById("explorer");
+  explorer.hidden=true;
 }
 
 </script>
