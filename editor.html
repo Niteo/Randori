@@ -121,8 +121,11 @@ input:checked + .slider:before {
   </select>
 </form></center>
 <div id="subtree-container">
-</div
 </div>
+</div>
+
+<script src="https://unpkg.com/mathjs@7.2.0/dist/math.min.js"></script>
+
 
 <script>
 
@@ -160,6 +163,7 @@ var paths = [];
 var roots = [];
 var children = [];
 
+var lookup = {};
 var data = undefined;
 
 var input = document.createElement('input');
@@ -189,6 +193,7 @@ function toggle(){
   // Explore mode
   if(elem.checked){
     data = toJSON();
+    lookup = getLookup();
     explorerGUI();
 
   } else{ //Edit mode
@@ -196,6 +201,7 @@ function toggle(){
 
     if(data != undefined){
       fromJSON(JSON.parse(data));
+      lookup = getLookup();
     }
   }
 }
@@ -232,12 +238,92 @@ function chosen(){
       i++;
     });
 
-    let follow_qids = [];
-
     // Find all follow-ups qids, recursively!
+    let questions = [];
+    recurse(qid, questions);
+
+    questions.forEach(function (question){
+      let i = 0;
+      question['answers'].forEach(function (answer){
+
+        let div = document.createElement("div");
+        let ans = document.createElement("input");
+        div.innerHTML = answer;
+        ans.value = question['probability'][i];
+
+        div.appendChild(ans);
+        parent_div.appendChild(div);
+
+        i++;
+      });
+    });
+
+
+
 
   }
 }
+
+function getLookup(){
+  let lookup = {};
+  roots.forEach(function (question){
+      lookup[question['qid']] = question;
+  });
+
+  children.forEach(function (question){
+      lookup[question['qid']] = question;
+  });
+
+  return lookup;
+}
+
+// Traverse and decorate JSON
+function recurse(qid, order) {
+  paths.forEach(function(d, i){
+    let source = d[0];
+    let alt = d[1];
+    let target = d[2];
+    let prefix = alt;
+    let parent = lookup[source];
+    let parent_index = parent["answers"].indexOf(alt);
+    let compound_prob = math.Fraction(parent["probability"][parent_index]);
+
+    parent["to_remove"] = alt;
+
+    console.log(source, qid, "Equals?", source==qid);
+
+    if(source==qid){
+        let add = lookup[target];
+        let parent_prefix = parent["answer_prefix"];
+        order.push(add)
+
+        // Continue building string if there is already one
+        if(parent_prefix){
+            prefix = parent_prefix+alt;
+          }
+
+        // Decorate
+        add["answer_prefix"] = prefix;
+        add["compound_answers"] = add["answers"].map(function (ans) {
+                return prefix+ans;
+        });
+
+        // Continue with probability from parent answer
+        if(parent["compound_probability"]){
+          compound_prob = parent["compound_probability"][parent_prefix+alt];
+        } 
+
+        // Decorate
+        add["compound_probability"] = {};
+        add["answers"].forEach(function (answer, index) {
+            add["compound_probability"][prefix+answer] = compound_prob.mul(math.Fraction(add["probability"][index]));  
+        });
+
+        recurse(target, order);
+    }
+  });
+}
+
 
 
 function toJSON(){
