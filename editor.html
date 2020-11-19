@@ -234,11 +234,11 @@ function chosen(){
     // Find all follow-ups qids, recursively!
     recurse(qid, questions);
 
-    console.log(questions);
-
     questions.forEach(function (question){
       let i = 0;
       if(question['answers']){
+        let sibling_div = document.createElement("div");
+        sibling_div.style ="border:2px solid lightgrey;padding:20px;margin:5px;border-radius:10px;text-align:center;";
         question['answers'].forEach(function (answer){
           let div = document.createElement("div");
           let label = document.createElement("label");
@@ -247,8 +247,13 @@ function chosen(){
           let b_label = document.createElement("label");
           let alpha = document.createElement("input");
           let beta = document.createElement("input");
+          let a_unit = document.createElement("label");
+          let b_unit = document.createElement("label");
 
-          label.innerHTML = "Pr["+answer+"] = Pr[&not random] + Pr["+answer+"| random], Node weight = ";
+          a_unit.innerHTML = " % ";
+          b_unit.innerHTML = " % ";
+
+          label.innerHTML = "<br>Pr[<b>"+answer+"</b>] = Pr[&not random] + Pr[<b>"+answer+"</b>| random],<br> Node weight = ";
           prob.value = question['probability'][i];
           prob.placeholder = "n/d"
 
@@ -257,6 +262,7 @@ function chosen(){
           alpha.max = 100;
           alpha.min = 0;
           beta.max = 100;
+          beta.value = 5;
           beta.min = 0;
 
           beta.title = "Lower is better";
@@ -273,14 +279,29 @@ function chosen(){
           div.appendChild(prob);
           div.appendChild(a_label);
           div.appendChild(alpha);
+          div.appendChild(a_unit);
           div.appendChild(b_label);
           div.appendChild(beta);
-          parent_div.appendChild(div);
+          div.appendChild(b_unit);
+          sibling_div.appendChild(div);
 
           i++;
         });
+        parent_div.appendChild(sibling_div);
       }
     });
+
+    let button = document.createElement("button");
+    button.innerHTML = "Calculate";
+    button.style = "border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgreen;color:white;"
+
+
+    // Add on click!
+    button.onclick = function (){
+      console.log("Clickclock!")
+    };
+
+    parent_div.appendChild(button);
   }
 }
 
