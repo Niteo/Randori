@@ -416,7 +416,7 @@ function fromJSON(content){
         parents.push((path[0]),path[1]);
       }
     });
-    createFollowUpUI(child['question'], child['answers'], child['probability'],fqid, parents, parents);
+    createFollowUpUI(child['question'], child['answers'], child['probability'],fqid, parents[0], parents[1]);
 
     if(fqid > fmax){
       fmax = fqid;
@@ -482,7 +482,7 @@ function createQuestionUI(q, a, prob, id){
   var remove_button = document.createElement("button");
   var order = document.createElement("input")
 
-  container.style = "border:2px solid lightseagreen;padding:20px;margin:5px;border-radius:10px;";
+  container.style = "border:2px solid lightseagreen;padding:20px;margin:5px;border-radius:10px;text-align:center;";
 
   question_label.innerHTML = "Question: ";
   answer_label.innerHTML = "Answer |  Fraction: "
@@ -515,14 +515,17 @@ function createQuestionUI(q, a, prob, id){
     roots.removeChild(elem);
     }
 
-  container.appendChild(order);
   container.appendChild(id_label);
+  container.appendChild(document.createElement("br"));
+  container.appendChild(order);
+  container.appendChild(document.createElement("br"));
   container.appendChild(question_label); 
   container.appendChild(question);
+  container.appendChild(document.createElement("br"));
   container.appendChild(answer_label);
   container.appendChild(answers);
   container.appendChild(probabilities);
-  container.appendChild(document.createElement("div"));
+  container.appendChild(document.createElement("br"));
   container.appendChild(remove_button);
 
   elem.appendChild(container);
@@ -534,19 +537,21 @@ function createQuestionUI(q, a, prob, id){
 
 // createFollowUpUI(Question string, Answer string, Probabilities string, Parent id, Parent answer string)
 function createFollowUpUI(q, a, prob, id, p, pa) {
+  var elem = document.createElement("div");
+  var condition = document.createElement("label");
   var parent = document.createElement("input");
   var alternative = document.createElement("input");
   var question = document.createElement("input");
   var answers = document.createElement("textarea");
   var probabilities = document.createElement("textarea");
-  var elem = document.createElement("div");
   var question_label = document.createElement("label");
   var answer_label = document.createElement("label");
   var id_label = document.createElement("label");
   var remove_button = document.createElement("button");
 
-  elem.style = "border:2px solid lightgrey;padding:20px;margin:5px;border-radius:10px;";
+  elem.style = "border:2px solid lightgrey;padding:20px;margin:5px;border-radius:10px;text-align:center;";
 
+  condition.innerHTML = "Condition/trigger: ";
   question_label.innerHTML = "Question: ";
   answer_label.innerHTML = "Answer |  Fraction: "
   id_label.innerHTML = "<b>id:F"+id+"</b>";
@@ -583,14 +588,18 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
   }
 
   elem.appendChild(id_label);
+  elem.appendChild(document.createElement("br"));
+  elem.appendChild(condition);
   elem.appendChild(parent);
   elem.appendChild(alternative);
+  elem.appendChild(document.createElement("br"));
   elem.appendChild(question_label); 
   elem.appendChild(question);
+  elem.appendChild(document.createElement("br"));
   elem.appendChild(answer_label);
   elem.appendChild(answers);
   elem.appendChild(probabilities);
-  elem.appendChild(document.createElement("div"));
+  elem.appendChild(document.createElement("br"));
   elem.appendChild(remove_button);
 
 
