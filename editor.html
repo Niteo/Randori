@@ -238,55 +238,49 @@ function chosen(){
 
     questions.forEach(function (question){
       let i = 0;
-
       if(question['answers']){
-      question['answers'].forEach(function (answer){
-        let div = document.createElement("div");
-        let label = document.createElement("label");
-        let prob = document.createElement("input");
-        let a_label = document.createElement("label");
-        let b_label = document.createElement("label");
-        let alpha = document.createElement("input");
-        let beta = document.createElement("input");
+        question['answers'].forEach(function (answer){
+          let div = document.createElement("div");
+          let label = document.createElement("label");
+          let prob = document.createElement("input");
+          let a_label = document.createElement("label");
+          let b_label = document.createElement("label");
+          let alpha = document.createElement("input");
+          let beta = document.createElement("input");
 
-        label.innerHTML = "Pr["+answer+"] = Pr[&not random] + Pr["+answer+"| random], Node weight = ";
-        prob.value = question['probability'][i];
-        prob.placeholder = "n/d"
+          label.innerHTML = "Pr["+answer+"] = Pr[&not random] + Pr["+answer+"| random], Node weight = ";
+          prob.value = question['probability'][i];
+          prob.placeholder = "n/d"
 
-        alpha.type = "number";
-        beta.type = "number";
-        alpha.max = 100;
-        alpha.min = 0;
-        beta.max = 100;
-        beta.min = 0;
+          alpha.type = "number";
+          beta.type = "number";
+          alpha.max = 100;
+          alpha.min = 0;
+          beta.max = 100;
+          beta.min = 0;
 
-        beta.title = "Lower is better";
-        alpha.title = "Lower is better";
-        a_label.title = "Error is bounded by alpha";
-        b_label.title = "Probability of bound not holding is beta";
-        prob.title = "Fraction: n/d";
+          beta.title = "Lower is better";
+          alpha.title = "Lower is better";
+          a_label.title = "Error is bounded by alpha";
+          b_label.title = "Probability of bound not holding is beta";
+          prob.title = "Fraction: n/d";
 
-        a_label.innerHTML = "alpha =";
-        b_label.innerHTML = "beta =";
+          a_label.innerHTML = "alpha =";
+          b_label.innerHTML = "beta =";
 
 
-        div.appendChild(label);
-        div.appendChild(prob);
-        div.appendChild(a_label);
-        div.appendChild(alpha);
-        div.appendChild(b_label);
-        div.appendChild(beta);
-        parent_div.appendChild(div);
+          div.appendChild(label);
+          div.appendChild(prob);
+          div.appendChild(a_label);
+          div.appendChild(alpha);
+          div.appendChild(b_label);
+          div.appendChild(beta);
+          parent_div.appendChild(div);
 
-        i++;
-      });
-
+          i++;
+        });
       }
     });
-
-
-
-
   }
 }
 
@@ -348,7 +342,117 @@ function recurse(qid, order) {
   });
 }
 
+function calculate(start){
+  let a = [start];
+  lookup = getLookup();
+  recurse(start["qid"], a);
+  return getTransitionMatrix(a);
+}
 
+
+function getTransitionMatrix(ordered){
+  let output = {};
+
+  let matrix = {};
+  let root_index = ordered[0]['qid'];
+  let potential_epsilon = undefined;
+  let valid_answers = {};
+  let ans_to_compound = {};
+    
+  ordered.forEach(function (question, i) {
+
+    if(i==0 && ordered.length>1){
+      root_index = question["qid"];
+      valid_answers[root_index]=question["answers"];
+    } else{
+      let temp_answers = question["answers"].slice();
+      
+      // Remove alternatives that aren't leaves
+      if(question["to_remove"]){
+        let remove_me = question["answers"].indexOf(question["to_remove"]);
+        temp_answers.splice(remove_me, 1);
+      } 
+
+      // If root
+      if(poll["order"].includes(question["qid"])){
+        root_index = question["qid"];
+        valid_answers[root_index] = temp_answers;
+      } else {
+        let to_use = [];
+
+        ans_to_compound[question["qid"]] = {};
+        temp_answers.forEach(function (ans) {
+          let name = question["answer_prefix"]+ans;
+          to_use.push(name);
+
+          ans_to_compound[question["qid"]][ans] = name;
+        });
+
+        valid_answers[question["qid"]] = to_use;
+      }
+    }
+
+    });
+
+    // For each input, create a transition to each output
+    Object.keys(valid_answers).forEach(function (qid){
+      valid_answers[qid].forEach(function (self){
+
+        // Find min/max per row
+        let max = undefined;
+        let min = undefined;
+
+        matrix[self] = {};
+
+          Object.keys(valid_answers).forEach(function (compare_qid) {
+            valid_answers[compare_qid].forEach(function (compare_alt){
+              let target_question = lookup[compare_qid];
+
+              let truth = math.Fraction(lookup[root_index]["truth"]);
+              // Probability of RANDOM answer
+              let random = math.Fraction(1).sub(truth);
+
+              let prob = undefined;
+              if(target_question["compound_probability"]){
+                prob = target_question["compound_probability"][compare_alt].mul(random);
+              } else{
+                let i = target_question["answers"].indexOf(compare_alt);
+                let frac = math.Fraction(target_question["probability"][i]);
+                prob = frac.mul(random);
+              }
+               
+
+              // Higher probability of not changing answer (self->self)
+              if(self == compare_alt){
+                prob = prob.add(truth);                  
+
+              }
+
+              // Initialize first loop
+              if(max==undefined && min==undefined){
+                max = prob;
+                min = prob;
+              } else if(prob > max){
+                max = prob;
+              } else if(prob < min){
+                min = prob;
+              }
+
+              matrix[self][compare_alt] = prob; 
+            });
+          });
+
+          let check = Math.max(max.div(min), min.div(max));
+          if(potential_epsilon==undefined || potential_epsilon<check){
+            potential_epsilon = check;
+          }
+      });
+    });
+
+  output['matrix'] = matrix;
+  output['epsilon'] = potential_epsilon;
+  return output;
+}
 
 function toJSON(){
   let output = {};
