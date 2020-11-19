@@ -248,7 +248,7 @@ function chosen(){
         let beta = document.createElement("input");
 
         label.innerHTML = "Pr["+answer+"] = Pr[&not random] + Pr["+answer+"| random], Node weight = ";
-        prob.value = root['probability'][i];
+        prob.value = question['probability'][i];
         prob.placeholder = "n/d"
 
         alpha.type = "number";
@@ -311,8 +311,6 @@ function recurse(qid, order) {
     let compound_prob = math.Fraction(parent["probability"][parent_index]);
 
     parent["to_remove"] = alt;
-
-    console.log(source, qid, "Equals?", source==qid);
 
     if(source==qid){
         let add = lookup[target];
