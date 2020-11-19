@@ -47,15 +47,15 @@
 }
 
 input:checked + .slider {
-  background-color: #2196F3;
+  background-color: darkseagreen;
 }
 
 input + .slider {
-  background-color: #90ff6e;
+  background-color: lightseagreen;
 }
 
 input:focus + .slider {
-  box-shadow: 0 0 1px #2196F3;
+  box-shadow: 0 0 1px darkseagreen;
 }
 
 input:checked + .slider:before {
@@ -98,14 +98,14 @@ input:checked + .slider:before {
     <div id="root_list">
     </div>
     <div style="margin-top: 20px;">
-      <button onclick="newQuestionUI()">Add question</button>
+      <button onclick="newQuestionUI()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightseagreen;">Add question</button>
     </div>
     </div>
     <div id="follow-ups" style="text-align: center">
       <h2>Follow-ups</h2>
       <div id="follow-ups-list" style="text-align: center"></div>
       <div style="margin-top: 20px;">
-        <button onclick="newFollowUpUI()">Add follow-up question</button>
+        <button onclick="newFollowUpUI()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgrey;">Add follow-up question</button>
       </div>
     </div>
     
@@ -482,9 +482,11 @@ function createQuestionUI(q, a, prob, id){
   var remove_button = document.createElement("button");
   var order = document.createElement("input")
 
+  container.style = "border:2px solid lightseagreen;padding:20px;margin:5px;border-radius:10px;";
+
   question_label.innerHTML = "Question: ";
   answer_label.innerHTML = "Answer |  Fraction: "
-  id_label.innerHTML = "id=Q"+id;
+  id_label.innerHTML = "<b>id:Q"+id+"</b>";
   remove_button.innerHTML = "Delete";
 
   remove_button.id = "remove"+id;
@@ -495,6 +497,10 @@ function createQuestionUI(q, a, prob, id){
   question.id = "question"+id+"textarea";
   answers.placeholder = "One answer alternative per row";
   answers.id = "answers"+id;
+  answers.placeholder = "One answer alternative per row";
+  answers.id = "answers"+id;
+  answers.title = "Alternatives separated by comma"
+  probabilities.title ="Separated by comma, corresponding to order of alternative";
   probabilities.placeholder = "Proability to choose corresponding answer";
   probabilities.id = "probabilities"+id;
   order.type = "number";
@@ -516,7 +522,8 @@ function createQuestionUI(q, a, prob, id){
   container.appendChild(answer_label);
   container.appendChild(answers);
   container.appendChild(probabilities);
-  container.appendChild(document.createElement("div")).appendChild(remove_button);
+  container.appendChild(document.createElement("div"));
+  container.appendChild(remove_button);
 
   elem.appendChild(container);
 
@@ -532,15 +539,17 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
   var question = document.createElement("input");
   var answers = document.createElement("textarea");
   var probabilities = document.createElement("textarea");
-  var elem = document.createElement("li");
+  var elem = document.createElement("div");
   var question_label = document.createElement("label");
   var answer_label = document.createElement("label");
   var id_label = document.createElement("label");
   var remove_button = document.createElement("button");
 
+  elem.style = "border:2px solid lightgrey;padding:20px;margin:5px;border-radius:10px;";
+
   question_label.innerHTML = "Question: ";
   answer_label.innerHTML = "Answer |  Fraction: "
-  id_label.innerHTML = "id=F"+id;
+  id_label.innerHTML = "<b>id:F"+id+"</b>";
   remove_button.innerHTML = "Delete";
 
   remove_button.id = "removeF"+id;
@@ -557,8 +566,10 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
   question.id = "question"+id+"textarea";
   answers.placeholder = "One answer alternative per row";
   answers.id = "answers"+id;
+  answers.title = "Alternatives separated by comma"
   probabilities.placeholder = "Proability to choose corresponding answer";
   probabilities.id = "probabilities"+id;
+  probabilities.title ="Separated by comma, corresponding to order of alternatives";
 
   question.value=q;
   answers.value=a;
@@ -579,6 +590,7 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
   elem.appendChild(answer_label);
   elem.appendChild(answers);
   elem.appendChild(probabilities);
+  elem.appendChild(document.createElement("div"));
   elem.appendChild(remove_button);
 
 
