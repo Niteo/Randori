@@ -79,48 +79,47 @@ input:checked + .slider:before {
 </style>
 <head><title>Randori: Poll Editor</title></head>
 <nav>
-  <div><center><button onclick="import_poll()">Import poll...</button>
-  <button onclick="export_poll()">Export poll...</button></center>
+  <div style="text-align: center"><button onclick="import_poll()">Import poll...</button>
+  <button onclick="export_poll()">Export poll...</button>
 </div>
-    <div style="margin-top: 20px;"><center><span style="font-size:24px">Edit</span>
+    <div style="margin-top: 20px;text-align: center"><span style="font-size:24px">Edit</span>
       <!-- Rounded switch -->
       <label class="switch">
         <input type="checkbox" id="toggler" onchange="toggle()">
         <span class="slider round"></span>
-      </label> <span style="font-size:24px">Explore</span></center>
+      </label> <span style="font-size:24px">Explore</span>
   </div>
 </nav>
 <body>
 <hr>
 <div id="container">
-  <div id="questions">
-  <center><h2>Root Questions</h2></center>
+  <div id="questions" style="text-align: center">
+  <h2>Root Questions</h2>
     <div id="root_list">
-    </div><center>
+    </div>
     <div style="margin-top: 20px;">
       <button onclick="newQuestionUI()">Add question</button>
-    </div></center>
     </div>
-    <div id="follow-ups">
-      <center><h2>Follow-ups</h2></center>
-      <div id="follow-ups-list"></div>
-      <center><div style="margin-top: 20px;">
+    </div>
+    <div id="follow-ups" style="text-align: center">
+      <h2>Follow-ups</h2>
+      <div id="follow-ups-list" style="text-align: center"></div>
+      <div style="margin-top: 20px;">
         <button onclick="newFollowUpUI()">Add follow-up question</button>
-      </div></center>
+      </div>
     </div>
     
 </div>
 
-<div id="explorer" hidden="true">
-  <center>
+<div id="explorer" hidden="true" style="text-align: center">
+  <div id="equations" style="text-align: center"> </div>
   <div><h2>Pick a Question</h2></div>
-</center>
-<center><form>
+<form>
   <select id="data-list" onchange="chosen()">
      <option value="placeholder"></option> 
   </select>
-</form></center>
-<div id="subtree-container">
+</form>
+<div id="subtree-container" style="text-align: center">
 </div>
 </div>
 
@@ -222,36 +221,59 @@ function chosen(){
     });
 
     let parent_div = document.getElementById("subtree-container");
-    parent_div.innerHTML = ""; 
+    parent_div.innerHTML = "<br><h3>True/Random answers:</hr><br>"; 
 
-    let i = 0;
-    root['answers'].forEach(function (answer){
-      console.log(answer)
-      let div = document.createElement("div");
-      let ans = document.createElement("input");
-      div.innerHTML = answer;
-      ans.value = root['probability'][i];
+    
+    let questions = [root];
+    let coinflip = document.createElement("input");
+    let ep = document.createElement("label");
+    coinflip.type = "range";
+    ep.innerHTML = "<br><h3>Epsilon: </h3>";
 
-      div.appendChild(ans);
-      parent_div.appendChild(div);
-
-      i++;
-    });
+    parent_div.appendChild(coinflip);
+    parent_div.appendChild(ep);
 
     // Find all follow-ups qids, recursively!
-    let questions = [];
     recurse(qid, questions);
 
     questions.forEach(function (question){
       let i = 0;
       question['answers'].forEach(function (answer){
-
         let div = document.createElement("div");
-        let ans = document.createElement("input");
-        div.innerHTML = answer;
-        ans.value = question['probability'][i];
+        let label = document.createElement("label");
+        let prob = document.createElement("input");
+        let a_label = document.createElement("label");
+        let b_label = document.createElement("label");
+        let alpha = document.createElement("input");
+        let beta = document.createElement("input");
 
-        div.appendChild(ans);
+        label.innerHTML = "Pr["+answer+"] = Pr[&not random] + Pr["+answer+"| random], Node weight = ";
+        prob.value = root['probability'][i];
+        prob.placeholder = "n/d"
+
+        alpha.type = "number";
+        beta.type = "number";
+        alpha.max = 100;
+        alpha.min = 0;
+        beta.max = 100;
+        beta.min = 0;
+
+        beta.title = "Lower is better";
+        alpha.title = "Lower is better";
+        a_label.title = "Error is bounded by alpha";
+        b_label.title = "Probability of bound not holding is beta";
+        prob.title = "Fraction: n/d";
+
+        a_label.innerHTML = "alpha =";
+        b_label.innerHTML = "beta =";
+
+
+        div.appendChild(label);
+        div.appendChild(prob);
+        div.appendChild(a_label);
+        div.appendChild(alpha);
+        div.appendChild(b_label);
+        div.appendChild(beta);
         parent_div.appendChild(div);
 
         i++;
@@ -608,6 +630,12 @@ function explorerGUI(){
 
   let explorer = document.getElementById("explorer");
   explorer.hidden=false;
+
+  let equations = document.getElementById("equations");
+  equations.innerHTML = "";
+  let chernoff = document.createElement("label");
+  chernoff.innerHTML = "<h2> Chernoff bound:<br> Pr[error<= alpha] >= beta, <br> where error=Pr[&not answer|random]<br> </h2><hr>";
+  equations.appendChild(chernoff);
 
   //Populate GUI with subtrees
   let datalist = document.getElementById("data-list");
