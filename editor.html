@@ -82,7 +82,7 @@ input:checked + .slider:before {
   <div style="text-align: center"><button onclick="import_poll()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgrey;">Import poll...</button>
   <button onclick="export_poll()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgrey;">Export poll...</button>
 </div>
-    <div style="margin-top: 20px;text-align: center"><span style="font-size:24px">Edit</span>
+    <div style="margin-top: 20px;text-align: center"><span style="font-size:24px"><b>Mode:</b> Edit</span>
       <!-- Rounded switch -->
       <label class="switch">
         <input type="checkbox" id="toggler" onchange="toggle()">
@@ -101,13 +101,14 @@ input:checked + .slider:before {
       <button onclick="newQuestionUI()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgrey;">Add question</button>
     </div>
     </div>
-    <hr>
+    <br><hr>
     <div id="follow-ups" style="text-align: center">
       <h2>Follow-ups</h2>
       <div id="follow-ups-list" style="text-align: center"></div>
       <div style="margin-top: 20px;">
         <button onclick="newFollowUpUI()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgrey;">Add follow-up question</button>
       </div>
+      <br>
     </div>
     
 </div>
@@ -241,46 +242,46 @@ function chosen(){
       let i = 0;
 
       if(questions['answers']){
-        question['answers'].forEach(function (answer){
-          let div = document.createElement("div");
-          let label = document.createElement("label");
-          let prob = document.createElement("input");
-          let a_label = document.createElement("label");
-          let b_label = document.createElement("label");
-          let alpha = document.createElement("input");
-          let beta = document.createElement("input");
+      question['answers'].forEach(function (answer){
+        let div = document.createElement("div");
+        let label = document.createElement("label");
+        let prob = document.createElement("input");
+        let a_label = document.createElement("label");
+        let b_label = document.createElement("label");
+        let alpha = document.createElement("input");
+        let beta = document.createElement("input");
 
-          label.innerHTML = "Pr["+answer+"] = Pr[&not random] + Pr["+answer+"| random], Node weight = ";
-          prob.value = question['probability'][i];
-          prob.placeholder = "n/d"
+        label.innerHTML = "Pr["+answer+"] = Pr[&not random] + Pr["+answer+"| random], Node weight = ";
+        prob.value = question['probability'][i];
+        prob.placeholder = "n/d"
 
-          alpha.type = "number";
-          beta.type = "number";
-          alpha.max = 100;
-          alpha.min = 0;
-          beta.max = 100;
-          beta.min = 0;
+        alpha.type = "number";
+        beta.type = "number";
+        alpha.max = 100;
+        alpha.min = 0;
+        beta.max = 100;
+        beta.min = 0;
 
-          beta.title = "Lower is better";
-          alpha.title = "Lower is better";
-          a_label.title = "Error is bounded by alpha";
-          b_label.title = "Probability of bound not holding is beta";
-          prob.title = "Fraction: n/d";
+        beta.title = "Lower is better";
+        alpha.title = "Lower is better";
+        a_label.title = "Error is bounded by alpha";
+        b_label.title = "Probability of bound not holding is beta";
+        prob.title = "Fraction: n/d";
 
-          a_label.innerHTML = "alpha =";
-          b_label.innerHTML = "beta =";
+        a_label.innerHTML = "alpha =";
+        b_label.innerHTML = "beta =";
 
 
-          div.appendChild(label);
-          div.appendChild(prob);
-          div.appendChild(a_label);
-          div.appendChild(alpha);
-          div.appendChild(b_label);
-          div.appendChild(beta);
-          parent_div.appendChild(div);
+        div.appendChild(label);
+        div.appendChild(prob);
+        div.appendChild(a_label);
+        div.appendChild(alpha);
+        div.appendChild(b_label);
+        div.appendChild(beta);
+        parent_div.appendChild(div);
 
-          i++;
-        });
+        i++;
+      });
 
       }
     });
@@ -533,6 +534,7 @@ function createQuestionUI(q, a, prob, id){
   order.type = "number";
   order.placeholder = "order";
   order.id = id+"order";
+  order.min= 1;
 
   question.value=q;
   answers.value=a;
