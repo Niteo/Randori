@@ -101,6 +101,7 @@ input:checked + .slider:before {
       <button onclick="newQuestionUI()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgrey;">Add question</button>
     </div>
     </div>
+    <hr>
     <div id="follow-ups" style="text-align: center">
       <h2>Follow-ups</h2>
       <div id="follow-ups-list" style="text-align: center"></div>
@@ -238,46 +239,50 @@ function chosen(){
 
     questions.forEach(function (question){
       let i = 0;
-      question['answers'].forEach(function (answer){
-        let div = document.createElement("div");
-        let label = document.createElement("label");
-        let prob = document.createElement("input");
-        let a_label = document.createElement("label");
-        let b_label = document.createElement("label");
-        let alpha = document.createElement("input");
-        let beta = document.createElement("input");
 
-        label.innerHTML = "Pr["+answer+"] = Pr[&not random] + Pr["+answer+"| random], Node weight = ";
-        prob.value = question['probability'][i];
-        prob.placeholder = "n/d"
+      if(questions['answers']){
+        question['answers'].forEach(function (answer){
+          let div = document.createElement("div");
+          let label = document.createElement("label");
+          let prob = document.createElement("input");
+          let a_label = document.createElement("label");
+          let b_label = document.createElement("label");
+          let alpha = document.createElement("input");
+          let beta = document.createElement("input");
 
-        alpha.type = "number";
-        beta.type = "number";
-        alpha.max = 100;
-        alpha.min = 0;
-        beta.max = 100;
-        beta.min = 0;
+          label.innerHTML = "Pr["+answer+"] = Pr[&not random] + Pr["+answer+"| random], Node weight = ";
+          prob.value = question['probability'][i];
+          prob.placeholder = "n/d"
 
-        beta.title = "Lower is better";
-        alpha.title = "Lower is better";
-        a_label.title = "Error is bounded by alpha";
-        b_label.title = "Probability of bound not holding is beta";
-        prob.title = "Fraction: n/d";
+          alpha.type = "number";
+          beta.type = "number";
+          alpha.max = 100;
+          alpha.min = 0;
+          beta.max = 100;
+          beta.min = 0;
 
-        a_label.innerHTML = "alpha =";
-        b_label.innerHTML = "beta =";
+          beta.title = "Lower is better";
+          alpha.title = "Lower is better";
+          a_label.title = "Error is bounded by alpha";
+          b_label.title = "Probability of bound not holding is beta";
+          prob.title = "Fraction: n/d";
+
+          a_label.innerHTML = "alpha =";
+          b_label.innerHTML = "beta =";
 
 
-        div.appendChild(label);
-        div.appendChild(prob);
-        div.appendChild(a_label);
-        div.appendChild(alpha);
-        div.appendChild(b_label);
-        div.appendChild(beta);
-        parent_div.appendChild(div);
+          div.appendChild(label);
+          div.appendChild(prob);
+          div.appendChild(a_label);
+          div.appendChild(alpha);
+          div.appendChild(b_label);
+          div.appendChild(beta);
+          parent_div.appendChild(div);
 
-        i++;
-      });
+          i++;
+        });
+
+      }
     });
 
 
@@ -349,16 +354,46 @@ function recurse(qid, order) {
 function toJSON(){
   let output = {};
   let order = [];
-
   let order_to_qid = {};
-  roots.forEach(function (root) {
-    let qid = root['qid'];
-    let order_input = document.getElementById("question"+qid+"order");
-    order_to_qid[order_input.value] = qid;
-  });
+  roots = [];
+  children = [];
 
-  for(qid in order_to_qid){
-    order.push(order_to_qid[qid]);
+
+  let i = 1;
+  for(i=1;i<counter;i++){
+    let question = {};
+    question['truth'] = "1/2";
+    question['qid'] = "Q"+i;
+    question['question'] = document.getElementById("Q"+i+"question").value;
+    question['answers'] = document.getElementById("Q"+i+"answers").value.split(',');
+
+    let denom = question['answers'].length;
+
+    question['probability'] = Array(denom).fill("1/"+denom);
+    roots.push(question);
+    
+    order_to_qid[document.getElementById("Q"+i+"order").value] = i;
+  }
+
+  // Keys are sorted
+  for(key in order_to_qid){
+    order.push(order_to_qid[key]);
+  }
+
+  for(i=1;i<follow_up_counter;i++){
+    let question = {};
+    question['qid'] = "F"+i;
+    question['question'] = document.getElementById("F"+i+"question").value;
+    question['answers'] = document.getElementById("F"+i+"answers").value.split(',');
+
+    let denom = question['answers'].length;
+
+    question['probability'] = Array(denom).fill("1/"+denom);
+
+    paths.push([document.getElementById("F"+i+"parent").value,
+    document.getElementById("F"+i+"alternative").value, "F"+i]);
+
+    children.push(question);
   }
 
   //Populate data from UI
@@ -399,7 +434,7 @@ function fromJSON(content){
 
   let count = 1;
   order.forEach(function (qid){
-    document.getElementById("question"+qid+"order").value = count;
+    document.getElementById("Q"+qid+"order").value = count;
     count++;
 
   });
@@ -421,25 +456,20 @@ function fromJSON(content){
     }
   });
 
-
-
   counter = max;
   follow_up_counter = fmax;
 }
 
-
-
-
 // Graphical representation
 function newQuestionUI() {
-  createQuestionUI("", "", "", counter);
+  createQuestionUI("", "", "", "Q"+counter);
   counter++;
 
 }
 
 // Graphical representation
 function newFollowUpUI() {
-  createFollowUpUI("","","",follow_up_counter, "", "");
+  createFollowUpUI("","","","F"+follow_up_counter, "", "");
   follow_up_counter++;
 
 }
@@ -484,27 +514,25 @@ function createQuestionUI(q, a, prob, id){
 
   question_label.innerHTML = "Question: ";
   answer_label.innerHTML = "Answer |  Fraction: "
-  id_label.innerHTML = "<b>id:Q"+id+"</b>";
+  id_label.innerHTML = "<b>id:"+id+"</b>";
   remove_button.innerHTML = "Delete";
 
   remove_button.id = "remove"+id;
   remove_button.style = "border-radius: 12px; border:none; padding: 7px 17px; background-color:indianred;color:white;"
 
-  elem.id = "question"+id;
+  elem.id = id;
   question.placeholder = "Question "+id;
   question.type = "text";
-  question.id = "question"+id+"textarea";
+  question.id = id+"question";
   answers.placeholder = "One answer alternative per row";
-  answers.id = "answers"+id;
-  answers.placeholder = "One answer alternative per row";
-  answers.id = "answers"+id;
+  answers.id = id+"answers";
   answers.title = "Alternatives separated by comma"
   probabilities.title ="Separated by comma, corresponding to order of alternative";
   probabilities.placeholder = "Proability to choose corresponding answer";
-  probabilities.id = "probabilities"+id;
+  probabilities.id = id+"probability";
   order.type = "number";
   order.placeholder = "order";
-  order.id = "question"+id+"order";
+  order.id = id+"order";
 
   question.value=q;
   answers.value=a;
@@ -553,27 +581,29 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
   condition.innerHTML = "Condition/trigger: ";
   question_label.innerHTML = "Question: ";
   answer_label.innerHTML = "Answer |  Fraction: "
-  id_label.innerHTML = "<b>id:F"+id+"</b>";
+  id_label.innerHTML = "<b>id:"+id+"</b>";
   remove_button.innerHTML = "Delete";
 
   remove_button.id = "removeF"+id;
   remove_button.style = "border-radius: 12px; border:none; padding: 7px 17px; background-color:indianred;color:white;"
 
-  elem.id = "question"+id;
+  elem.id = id;
 
   parent.type = "text";
   parent.placeholder = "Parent question id";
+  parent.id = id+"parent";
   alternative.type = "text";
   alternative.placeholder = "trigger (answer)"
+  alternative.id = id+"alternative";
 
   question.placeholder = "Follow-up ";
   question.type = "text";
-  question.id = "question"+id+"textarea";
+  question.id = id+"question";
   answers.placeholder = "One answer alternative per row";
-  answers.id = "answers"+id;
+  answers.id = id+"answers";
   answers.title = "Alternatives separated by comma"
   probabilities.placeholder = "Proability to choose corresponding answer";
-  probabilities.id = "probabilities"+id;
+  probabilities.id = id+"probability";
   probabilities.title ="Separated by comma, corresponding to order of alternatives";
 
   question.value=q;
@@ -626,8 +656,6 @@ function import_poll() {
 }
 
 function cleanGUI(){
-
-  
   let questions = document.getElementById("root_list");
   let followups = document.getElementById("follow-ups-list");
 
