@@ -112,7 +112,6 @@ input:checked + .slider:before {
     </div>
     
 </div>
-
 <div id="explorer" hidden="true" style="text-align: center">
   <div id="equations" style="text-align: center"> </div>
   <div><h2>Pick a Question</h2></div>
@@ -193,7 +192,6 @@ function toggle(){
 
   // Explore mode
   if(elem.checked){
-    data = toJSON();
     lookup = getLookup();
     explorerGUI();
 
@@ -211,9 +209,7 @@ function chosen(){
   let elem = document.getElementById("data-list");
 
   if(elem && elem!="placeholder"){
-    console.log(elem.value);
     let qid = elem.value;
-
     let root = undefined;
 
     roots.forEach(function (r){
@@ -238,10 +234,12 @@ function chosen(){
     // Find all follow-ups qids, recursively!
     recurse(qid, questions);
 
+    console.log(questions);
+
     questions.forEach(function (question){
       let i = 0;
 
-      if(questions['answers']){
+      if(question['answers']){
       question['answers'].forEach(function (answer){
         let div = document.createElement("div");
         let label = document.createElement("label");
@@ -406,6 +404,8 @@ function toJSON(){
   output['paths'] = paths;
   output['order'] = order;
 
+  data = output;
+
   return JSON.stringify(output);
 }
 
@@ -435,7 +435,7 @@ function fromJSON(content){
 
   let count = 1;
   order.forEach(function (qid){
-    document.getElementById("Q"+qid+"order").value = count;
+    document.getElementById(qid+"order").value = count;
     count++;
 
   });
@@ -653,29 +653,16 @@ function export_poll() {
 }
 
 function import_poll() {
-  cleanGUI();
+  let roots = document.getElementById("root_list");
+  roots.innerHTML = "";
+
+  let follows = document.getElementById("follow-ups-list");
+  follows.innerHTML = "";
+  
   input.click();
 }
 
-function cleanGUI(){
-  let questions = document.getElementById("root_list");
-  let followups = document.getElementById("follow-ups-list");
-
-  let buttons = questions.querySelectorAll("button");
-  let buttons_follow = followups.querySelectorAll("button");
-
-  buttons.forEach(function (button) {
-    button.click();
-  });
-
-  buttons_follow.forEach(function (button) {
-    button.click();
-  });
-
-}
-
 function explorerGUI(){
-  cleanGUI();
   let editor = document.getElementById("container");
   editor.hidden=true;
 
@@ -699,8 +686,7 @@ function explorerGUI(){
   });
 }
 
-function editGUI(){
-  cleanGUI();
+function editGUI(){  
   let element = document.getElementById("container");
   element.hidden=false;
   let explorer = document.getElementById("explorer");
