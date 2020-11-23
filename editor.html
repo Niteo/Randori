@@ -234,6 +234,10 @@ function chosen(){
       let val = coinflip.value;
       let frac = math.Fraction(val/100);
       ratio_label.innerHTML = "True "+val+"/"+(100-val)+" Random";
+
+      root['truth'] = frac;
+      let output = calculate(root);
+      ep.innerHTML = "<br><h3>Epsilon = ln("+output['epsilon']+") = "+ math.log(output['epsilon'])+"</h3>";
      
 
     }
