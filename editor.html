@@ -162,6 +162,7 @@ var follow_up_counter = 1;
 var paths = [];
 var roots = [];
 var children = [];
+var order = []
 
 var lookup = {};
 var data = undefined;
@@ -193,13 +194,14 @@ function toggle(){
   // Explore mode
   if(elem.checked){
     lookup = getLookup();
+    toJSON(); //Also saves poll to var data
     explorerGUI();
 
   } else{ //Edit mode
     editGUI();
 
     if(data != undefined){
-      fromJSON(JSON.parse(data));
+      fromJSON(data);
       lookup = getLookup();
     }
   }
@@ -496,14 +498,16 @@ function getTransitionMatrix(ordered){
 
 function toJSON(){
   let output = {};
-  let order = [];
   let order_to_qid = {};
+  order = [];
   roots = [];
   children = [];
+  paths = [];
 
+ //Populate data from UI
 
   let i = 1;
-  for(i=1;i<counter;i++){
+  for(i=1;i<=counter;i++){
     let question = {};
     question['truth'] = "1/2";
     question['qid'] = "Q"+i;
@@ -523,7 +527,7 @@ function toJSON(){
     order.push(order_to_qid[key]);
   }
 
-  for(i=1;i<follow_up_counter;i++){
+  for(i=1;i<=follow_up_counter;i++){
     let question = {};
     question['qid'] = "F"+i;
     question['question'] = document.getElementById("F"+i+"question").value;
@@ -533,14 +537,14 @@ function toJSON(){
 
     question['probability'] = Array(denom).fill("1/"+denom);
 
-    paths.push([document.getElementById("F"+i+"parent").value,
-    document.getElementById("F"+i+"alternative").value, "F"+i]);
+    let pa = document.getElementById("F"+i+"parent").value;
+    let alt = document.getElementById("F"+i+"alternative").value;
+
+    paths.push([pa, alt, "F"+i]);
+    console.log("Path for ", i, ": ", [pa, alt, "F"+i]);
 
     children.push(question);
   }
-
-  //Populate data from UI
-
 
   // Assign
   output['children'] = children;
@@ -550,16 +554,14 @@ function toJSON(){
 
   data = output;
 
+  console.log(output);
+
   return JSON.stringify(output);
 }
 
 function fromJSON(content){
   let max = Number.MIN_VALUE;
   let fmax = Number.MIN_VALUE;
-  let order = [];
-  children = [];
-  roots = [];
-  paths = [];
 
   children = content['children'];
   roots = content['roots'];
@@ -572,8 +574,9 @@ function fromJSON(content){
   roots.forEach(function (root){
     let qid = root['qid'];
     createQuestionUI(root['question'], root['answers'], root['probability'], qid);
-    if(qid > max){
-      max = qid;
+    let comp = qid.substring(1, qid.length); //Remove the initial letter
+    if(comp > max){
+      max = comp;
     }
   });
 
@@ -586,18 +589,21 @@ function fromJSON(content){
 
   children.forEach(function (child){
     //Find path(s)
-    let parents = [];
+    let path = undefined;
     let fqid = child['qid'];
 
-    paths.forEach(function (path){
-      if(path[2]==fqid){
-        parents.push((path[0]),path[1]);
+    paths.forEach(function (p){
+      if(p[2]===fqid){
+        path = p;
       }
     });
-    createFollowUpUI(child['question'], child['answers'], child['probability'],fqid, parents[0], parents[1]);
 
-    if(fqid > fmax){
-      fmax = fqid;
+    createFollowUpUI(child['question'], child['answers'], child['probability'], fqid, path[0], path[1]);
+
+    let comp = fqid.substring(1, fqid.length); //Remove the initial letter
+
+    if(comp > fmax){
+      fmax = comp;
     }
   });
 
@@ -631,16 +637,6 @@ function createQuestion(q, a, prob, i){
   return question;
 }
 
-// Logical representation
-function createPath(p, pa, c){
-  paths.push([p,pa,c]);
-}
-
-// Logic representation
-function createFollowUp(q, a, prob, i, pid, pa){
-  let question = createQuestion(q, a, prob, i);
-  createPath(pid,pa,i);
-}
 
 // createQuestionUI(Question string, Answers string, Probabilities string, Id int)
 function createQuestionUI(q, a, prob, id){
@@ -738,9 +734,11 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
   parent.type = "text";
   parent.placeholder = "Parent question id";
   parent.id = id+"parent";
+  parent.title = "Parent question id";
   alternative.type = "text";
   alternative.placeholder = "trigger (answer)"
   alternative.id = id+"alternative";
+  alternative.title = "Alternative (from parent question)";
 
   question.placeholder = "Follow-up ";
   question.type = "text";
@@ -835,6 +833,9 @@ function editGUI(){
   element.hidden=false;
   let explorer = document.getElementById("explorer");
   explorer.hidden=true;
+
+  document.getElementById("follow-ups-list").innerHTML = "";
+  document.getElementById("root_list").innerHTML = "";
 }
 
 </script>
