@@ -224,11 +224,25 @@ function chosen(){
     
     let questions = [root];
     let coinflip = document.createElement("input");
+    let ratio_label = document.createElement("label");
     let ep = document.createElement("label");
     coinflip.type = "range";
+    coinflip.value = 50;
+    ratio_label.innerHTML = "True: 50/50 :Random";
+
+    coinflip.oninput = function update() {
+      let val = coinflip.value;
+      let frac = math.Fraction(val/100);
+      ratio_label.innerHTML = "True "+val+"/"+(100-val)+" Random";
+     
+
+    }
+
     ep.innerHTML = "<br><h3>Epsilon: </h3>";
 
     parent_div.appendChild(coinflip);
+    parent_div.appendChild(document.createElement("br"));
+    parent_div.appendChild(ratio_label);
     parent_div.appendChild(ep);
 
     // Find all follow-ups qids, recursively!
