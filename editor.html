@@ -507,7 +507,7 @@ function toJSON(){
  //Populate data from UI
 
   let i = 1;
-  for(i=1;i<=counter;i++){
+  for(i=1;i<counter;i++){
     let question = {};
     question['truth'] = "1/2";
     question['qid'] = "Q"+i;
@@ -527,7 +527,7 @@ function toJSON(){
     order.push("Q"+order_to_qid[key]);
   }
 
-  for(i=1;i<=follow_up_counter;i++){
+  for(i=1;i<follow_up_counter;i++){
     let question = {};
     question['qid'] = "F"+i;
     question['question'] = document.getElementById("F"+i+"question").value;
@@ -541,7 +541,6 @@ function toJSON(){
     let alt = document.getElementById("F"+i+"alternative").value;
 
     paths.push([pa, alt, "F"+i]);
-    console.log("Path for ", i, ": ", [pa, alt, "F"+i]);
 
     children.push(question);
   }
@@ -553,8 +552,6 @@ function toJSON(){
   output['order'] = order;
 
   data = output;
-
-  console.log(output);
 
   return JSON.stringify(output);
 }
@@ -573,8 +570,8 @@ function fromJSON(content){
   // Populate UI
   roots.forEach(function (root){
     let qid = root['qid'];
-    createQuestionUI(root['question'], root['answers'], root['probability'], qid);
-    let comp = qid.substring(1, qid.length); //Remove the initial letter
+    createQuestionUI(root['question'], root['answers'], qid);
+    let comp = parseInt(qid.substring(1, qid.length)); //Remove the initial letter
     if(comp > max){
       max = comp;
     }
@@ -598,29 +595,29 @@ function fromJSON(content){
       }
     });
 
-    createFollowUpUI(child['question'], child['answers'], child['probability'], fqid, path[0], path[1]);
+    createFollowUpUI(child['question'], child['answers'], fqid, path[0], path[1]);
 
-    let comp = fqid.substring(1, fqid.length); //Remove the initial letter
+    let comp = parseInt(fqid.substring(1, fqid.length)); //Remove the initial letter
 
     if(comp > fmax){
       fmax = comp;
     }
   });
 
-  counter = max;
-  follow_up_counter = fmax;
+  counter = max+1;
+  follow_up_counter = fmax+1;
 }
 
 // Graphical representation
 function newQuestionUI() {
-  createQuestionUI("", "", "", "Q"+counter);
+  createQuestionUI("", "", "Q"+counter);
   counter++;
 
 }
 
 // Graphical representation
 function newFollowUpUI() {
-  createFollowUpUI("","","","F"+follow_up_counter, "", "");
+  createFollowUpUI("","","F"+follow_up_counter, "", "");
   follow_up_counter++;
 
 }
@@ -639,11 +636,10 @@ function createQuestion(q, a, prob, i){
 
 
 // createQuestionUI(Question string, Answers string, Probabilities string, Id int)
-function createQuestionUI(q, a, prob, id){
+function createQuestionUI(q, a, id){
   var container = document.createElement("div");
   var question = document.createElement("input");
   var answers = document.createElement("textarea");
-  var probabilities = document.createElement("textarea");
   var elem = document.createElement("li");
   var question_label = document.createElement("label");
   var answer_label = document.createElement("label");
@@ -654,7 +650,7 @@ function createQuestionUI(q, a, prob, id){
   container.style = "border:2px solid lightgrey;padding:20px;margin:5px;border-radius:10px;text-align:center;";
 
   question_label.innerHTML = "Question: ";
-  answer_label.innerHTML = "Answer |  Fraction: "
+  answer_label.innerHTML = "Answers: "
   id_label.innerHTML = "<b>id:"+id+"</b>";
   remove_button.innerHTML = "Delete";
 
@@ -665,12 +661,9 @@ function createQuestionUI(q, a, prob, id){
   question.placeholder = "Question "+id;
   question.type = "text";
   question.id = id+"question";
-  answers.placeholder = "One answer alternative per row";
+  answers.placeholder = "Comma separated answer alternatives";
   answers.id = id+"answers";
   answers.title = "Alternatives separated by comma"
-  probabilities.title ="Separated by comma, corresponding to order of alternative";
-  probabilities.placeholder = "Proability to choose corresponding answer";
-  probabilities.id = id+"probability";
   order_label.type = "number";
   order_label.placeholder = "order";
   order_label.id = id+"order";
@@ -678,7 +671,6 @@ function createQuestionUI(q, a, prob, id){
 
   question.value=q;
   answers.value=a;
-  probabilities.value=prob;
 
   remove_button.onclick = function remove() {
     roots.removeChild(elem);
@@ -693,7 +685,6 @@ function createQuestionUI(q, a, prob, id){
   container.appendChild(document.createElement("br"));
   container.appendChild(answer_label);
   container.appendChild(answers);
-  container.appendChild(probabilities);
   container.appendChild(document.createElement("br"));
   container.appendChild(remove_button);
 
@@ -704,15 +695,14 @@ function createQuestionUI(q, a, prob, id){
   roots.appendChild(elem);
 }
 
-// createFollowUpUI(Question string, Answer string, Probabilities string, Parent id, Parent answer string)
-function createFollowUpUI(q, a, prob, id, p, pa) {
+// createFollowUpUI(Question string, Answer string, Parent id, Parent answer string)
+function createFollowUpUI(q, a, id, p, pa) {
   var elem = document.createElement("div");
   var condition = document.createElement("label");
   var parent = document.createElement("input");
   var alternative = document.createElement("input");
   var question = document.createElement("input");
   var answers = document.createElement("textarea");
-  var probabilities = document.createElement("textarea");
   var question_label = document.createElement("label");
   var answer_label = document.createElement("label");
   var id_label = document.createElement("label");
@@ -722,7 +712,7 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
 
   condition.innerHTML = "Condition/trigger: ";
   question_label.innerHTML = "Question: ";
-  answer_label.innerHTML = "Answer |  Fraction: "
+  answer_label.innerHTML = "Answers: "
   id_label.innerHTML = "<b>id:"+id+"</b>";
   remove_button.innerHTML = "Delete";
 
@@ -743,16 +733,12 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
   question.placeholder = "Follow-up ";
   question.type = "text";
   question.id = id+"question";
-  answers.placeholder = "One answer alternative per row";
+  answers.placeholder = "Comma separated answer alternatives";
   answers.id = id+"answers";
-  answers.title = "Alternatives separated by comma"
-  probabilities.placeholder = "Proability to choose corresponding answer";
-  probabilities.id = id+"probability";
-  probabilities.title ="Separated by comma, corresponding to order of alternatives";
+  answers.title = "Alternatives separated by comma";
 
   question.value=q;
   answers.value=a;
-  probabilities.value=prob;
   parent.value=p;
   alternative.value=pa;
 
@@ -772,7 +758,6 @@ function createFollowUpUI(q, a, prob, id, p, pa) {
   elem.appendChild(document.createElement("br"));
   elem.appendChild(answer_label);
   elem.appendChild(answers);
-  elem.appendChild(probabilities);
   elem.appendChild(document.createElement("br"));
   elem.appendChild(remove_button);
 
