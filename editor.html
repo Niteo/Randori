@@ -91,7 +91,7 @@ input:checked + .slider:before {
   </div>
 </nav>
 <body>
-<hr>
+<hr style=height:1px;width:100%;color:lightgray>
 <div id="container">
   <div id="questions" style="text-align: center;">
   <h2>Root Questions</h2>
@@ -101,7 +101,7 @@ input:checked + .slider:before {
       <button onclick="newQuestionUI()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgrey;">Add question</button>
     </div>
     </div>
-    <br><hr>
+    <br><hr style=height:1px;width:50%;color:lightgray>
     <div id="follow-ups" style="text-align: center">
       <h2>Follow-ups</h2>
       <div id="follow-ups-list" style="text-align: center"></div>
@@ -233,7 +233,7 @@ function chosen(){
     };
 
     let label = document.createElement("label");
-    label.innerHTML =  "<br><h3>True/Random answers:</hr><br>"; 
+    label.innerHTML =  "<br><h3>True/Random answers:</h3><br>"; 
 
     parent_div.appendChild(document.createElement("br"));
     parent_div.appendChild(button);
@@ -245,7 +245,7 @@ function chosen(){
     let ep = document.createElement("label");
     coinflip.type = "range";
     coinflip.value = 50;
-    ratio_label.innerHTML = "True: 50/50 :Random";
+    ratio_label.innerHTML = "True 50/50 Random";
 
     coinflip.oninput = function update() {
       let val = coinflip.value;
@@ -284,6 +284,14 @@ function chosen(){
           let beta = document.createElement("input");
           let a_unit = document.createElement("label");
           let b_unit = document.createElement("label");
+          let alpha_radio_label = document.createElement("label");
+          let beta_radio_label = document.createElement("label");
+          let weight_radio_label = document.createElement("label");
+          let alpha_radio = document.createElement("input");
+          let beta_radio = document.createElement("input");
+          let weight_radio = document.createElement("input");
+
+          
 
           a_unit.innerHTML = " % ";
           b_unit.innerHTML = " % ";
@@ -308,7 +316,20 @@ function chosen(){
 
           a_label.innerHTML = "alpha =";
           b_label.innerHTML = "beta =";
+          alpha_radio_label.innerHTML = "Alpha:";
+          beta_radio_label.innerHTML = "Beta:";
+          weight_radio_label.innerHTML = "<i>Choose parameter to calculate.</i> Weight:"
 
+          alpha_radio.type="radio";
+          alpha_radio.id="alpha_radio";
+          alpha_radio.value="alpha";
+          alpha_radio.checked = true;
+          beta_radio.type="radio";
+          beta_radio.id = "beta_radio";
+          beta_radio.value="beta";
+          weight_radio.type="radio";
+          weight_radio.id = "weight_radio";
+          weight_radio.value="weight";
 
           div.appendChild(label);
           div.appendChild(prob);
@@ -319,6 +340,18 @@ function chosen(){
           div.appendChild(b_label);
           div.appendChild(beta);
           div.appendChild(b_unit);
+          div.appendChild(document.createElement("br"));
+          div.appendChild(weight_radio_label);
+          div.appendChild(weight_radio);
+          div.appendChild(alpha_radio_label);
+          div.appendChild(alpha_radio);
+          div.appendChild(beta_radio_label);
+          div.appendChild(beta_radio);
+
+          let line = document.createElement("label");
+          line.innerHTML="<hr style=height:1px;width:45%;color:lightgray>";
+          div.appendChild(line);
+
           sibling_div.appendChild(div);
 
           i++;
@@ -803,7 +836,7 @@ function explorerGUI(){
   let equations = document.getElementById("equations");
   equations.innerHTML = "";
   let chernoff = document.createElement("label");
-  chernoff.innerHTML = "<h2> Chernoff bound:<br> Pr[error<= alpha] >= beta, <br> where error=Pr[&not answer|random]<br> </h2><hr>";
+  chernoff.innerHTML = "<h2> Chernoff bound:<br> Pr[error<= alpha] >= beta, <br> where error=Pr[&not answer|random]<br> </h2><hr style=height:1px;width:50%;color:lightgray>";
   equations.appendChild(chernoff);
 
   //Populate GUI with subtrees
