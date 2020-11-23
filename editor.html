@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<style>
+
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
+  <title>Randori: Poll Editor</title>
+  <style>
   #state {
       padding-top: 1em;
   }
-
 
  /* The switch - the box around the slider */
 .switch {
@@ -72,12 +76,8 @@ input:checked + .slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
-
-
-
-
 </style>
-<head><title>Randori: Poll Editor</title></head>
+</head>
 <nav>
   <div style="text-align: center"><button onclick="import_poll()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgrey;">Import poll...</button>
   <button onclick="export_poll()" style="border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgrey;">Export poll...</button>
