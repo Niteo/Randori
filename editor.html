@@ -274,6 +274,7 @@ function chosen(){
       if(question['answers']){
         let sibling_div = document.createElement("div");
         sibling_div.style ="border:2px solid lightgrey;padding:20px;margin:5px;border-radius:10px;text-align:center;";
+        
         question['answers'].forEach(function (answer){
           let div = document.createElement("div");
           let label = document.createElement("label");
@@ -290,8 +291,10 @@ function chosen(){
           let alpha_radio = document.createElement("input");
           let beta_radio = document.createElement("input");
           let weight_radio = document.createElement("input");
+          let radio_label = document.createElement("label");
+          let radio_div = document.createElement("div");
 
-          
+          radio_div.style = "text-align:center;"
 
           a_unit.innerHTML = " % ";
           b_unit.innerHTML = " % ";
@@ -316,9 +319,10 @@ function chosen(){
 
           a_label.innerHTML = "alpha =";
           b_label.innerHTML = "beta =";
-          alpha_radio_label.innerHTML = "Alpha:";
-          beta_radio_label.innerHTML = "Beta:";
-          weight_radio_label.innerHTML = "<i>Choose parameter to calculate.</i> Weight:"
+          alpha_radio_label.innerHTML = "Alpha";
+          beta_radio_label.innerHTML = "Beta";
+          weight_radio_label.innerHTML = "Weight";
+          radio_label.innerHTML = "<i>Choose parameter to calculate.</i>"
 
           alpha_radio.type="radio";
           alpha_radio.id="alpha_radio";
@@ -341,18 +345,27 @@ function chosen(){
           div.appendChild(beta);
           div.appendChild(b_unit);
           div.appendChild(document.createElement("br"));
-          div.appendChild(weight_radio_label);
-          div.appendChild(weight_radio);
-          div.appendChild(alpha_radio_label);
-          div.appendChild(alpha_radio);
-          div.appendChild(beta_radio_label);
-          div.appendChild(beta_radio);
 
-          let line = document.createElement("label");
-          line.innerHTML="<hr style=height:1px;width:45%;color:lightgray>";
-          div.appendChild(line);
+
+          radio_div.appendChild(radio_label);
+          radio_div.appendChild(document.createElement("br"));
+          radio_div.appendChild(weight_radio);
+          radio_div.appendChild(weight_radio_label);
+          radio_div.appendChild(document.createElement("br"));
+          radio_div.appendChild(alpha_radio);
+          radio_div.appendChild(alpha_radio_label);
+          radio_div.appendChild(document.createElement("br"));
+          radio_div.appendChild(beta_radio);
+          radio_div.appendChild(beta_radio_label);
+          
+
+          
 
           sibling_div.appendChild(div);
+          sibling_div.appendChild(radio_div);
+          let line = document.createElement("label");
+          line.innerHTML="<hr style=height:1px;width:45%;color:lightgray>";
+          sibling_div.appendChild(line);
 
           i++;
         });
