@@ -524,7 +524,7 @@ function toJSON(){
 
   // Keys are sorted
   for(key in order_to_qid){
-    order.push(order_to_qid[key]);
+    order.push("Q"+order_to_qid[key]);
   }
 
   for(i=1;i<=follow_up_counter;i++){
@@ -649,7 +649,7 @@ function createQuestionUI(q, a, prob, id){
   var answer_label = document.createElement("label");
   var id_label = document.createElement("label");
   var remove_button = document.createElement("button");
-  var order = document.createElement("input")
+  var order_label = document.createElement("input")
 
   container.style = "border:2px solid lightgrey;padding:20px;margin:5px;border-radius:10px;text-align:center;";
 
@@ -671,10 +671,10 @@ function createQuestionUI(q, a, prob, id){
   probabilities.title ="Separated by comma, corresponding to order of alternative";
   probabilities.placeholder = "Proability to choose corresponding answer";
   probabilities.id = id+"probability";
-  order.type = "number";
-  order.placeholder = "order";
-  order.id = id+"order";
-  order.min= 1;
+  order_label.type = "number";
+  order_label.placeholder = "order";
+  order_label.id = id+"order";
+  order_label.min= 1;
 
   question.value=q;
   answers.value=a;
@@ -686,7 +686,7 @@ function createQuestionUI(q, a, prob, id){
 
   container.appendChild(id_label);
   container.appendChild(document.createElement("br"));
-  container.appendChild(order);
+  container.appendChild(order_label);
   container.appendChild(document.createElement("br"));
   container.appendChild(question_label); 
   container.appendChild(question);
