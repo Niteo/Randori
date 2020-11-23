@@ -221,8 +221,23 @@ function chosen(){
     });
 
     let parent_div = document.getElementById("subtree-container");
-    parent_div.innerHTML = "<br><h3>True/Random answers:</hr><br>"; 
 
+
+    let button = document.createElement("button");
+    button.innerHTML = "Calculate";
+    button.style = "border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgreen;color:white;"
+
+    // Add on click!
+    button.onclick = function (){
+      console.log("Clickclock!")
+    };
+
+    let label = document.createElement("label");
+    label.innerHTML =  "<br><h3>True/Random answers:</hr><br>"; 
+
+    parent_div.appendChild(document.createElement("br"));
+    parent_div.appendChild(button);
+    parent_div.appendChild(label);
     
     let questions = [root];
     let coinflip = document.createElement("input");
@@ -311,19 +326,8 @@ function chosen(){
         parent_div.appendChild(sibling_div);
       }
     });
-
-    let button = document.createElement("button");
-    button.innerHTML = "Calculate";
-    button.style = "border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgreen;color:white;"
-
-
-    // Add on click!
-    button.onclick = function (){
-      console.log("Clickclock!")
-    };
-
-    parent_div.appendChild(button);
   }
+    
 }
 
 function getLookup(){
