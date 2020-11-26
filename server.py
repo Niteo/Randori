@@ -30,43 +30,31 @@ app = Flask(__name__)
 # In[ ]:
 
 
-#Example JSON
-_example_json_poll = {"children": [
-{"answers": ["B+", "AB+", "O-", "A-", "Other"],
-   "probability": ["1/5", "1/5", "1/5", "1/5", "1/5"],
-   "qid": 1,
-   "question": "Specify..."},
-  {"answers": ["B-", "AB-"],
-   "probability": ["3/4", "1/4"],
-   "qid": 2,
-   "question": "Specify further..."}],
- "paths": [[0, "Other", 1], [1, "Other", 2]],
- "roots": [{"answers": ["O+", "A+", "Other"],
-   "probability": ["1/3", "1/3", "1/3"],
-   "qid": 0,
-   "truth": "1/2",
-   "question": "Blood type?"}, 
-   {"answers": ["A", "B", "C"],
-   "probability": ["1/3", "1/3", "1/3"],
-   "qid": 4,
-   "truth": "3/4",
-   "question": "Q2?"},
-   {"answers": ["1", "2"],
-   "probability": ["1/2", "1/2"],
-   "qid": 3,   
-   "truth": "1/3",
-   "question": "1 or 2?"}],
- "order": [0, 4, 3]
+#Active poll
+poll = {"children":[
+  {"qid":"F1",
+  "question":"What's the reason you feel unhappy?",
+  "answers":["Didn't meet my expectations"," Product was damaged","Other"],
+  "probability":["1/3","1/3","1/3"]}
+],
+"roots":[
+  {"qid":"Q1",
+  "truth":"1/2",
+  "question":"How do you feel about your purchase?",
+  "answers":["Happy","Neutral","Unhappy"],
+  "probability":["1/3","1/3","1/3"]}
+],
+"paths":[["Q1","Unhappy","F1"]],
+"order":["Q1"]
 }
-_example_json_poll
 
 
 # In[ ]:
 
 
 # Helper functions and logic
-json_poll = json.dumps(_example_json_poll)
-poll_info = lgc.parsePoll(_example_json_poll)
+json_poll = json.dumps(poll)
+poll_info = lgc.parsePoll(poll)
 subtrees=poll_info['subtrees']
 matrices=poll_info['matrices']
 lookup = poll_info['lookup']
