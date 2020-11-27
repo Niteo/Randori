@@ -245,6 +245,8 @@ function chosen(){
     let ep = document.createElement("label");
     coinflip.type = "range";
     coinflip.value = 50;
+    coinflip.max = 99;
+    coinflip.min = 1;
     ratio_label.innerHTML = "True 50/50 Random";
 
     coinflip.oninput = function update() {
@@ -305,11 +307,11 @@ function chosen(){
 
           alpha.type = "number";
           beta.type = "number";
-          alpha.max = 100;
-          alpha.min = 0;
-          beta.max = 100;
+          alpha.max = 99;
+          alpha.min = 1;
+          beta.max = 99;
           beta.value = 5;
-          beta.min = 0;
+          beta.min = 1;
 
           beta.title = "Lower is better";
           alpha.title = "Lower is better";
