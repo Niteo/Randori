@@ -335,6 +335,22 @@ function chosen(){
           weight_radio.id = "weight_radio";
           weight_radio.value="weight";
 
+          alpha_radio.onchange = function () {
+            beta_radio.checked = false;
+            weight_radio.checked = false;
+          }
+
+          beta_radio.onchange = function () {
+            alpha_radio.checked = false;
+            weight_radio.checked = false;
+          }
+          
+
+          weight_radio.onchange = function () {
+            beta_radio.checked = false;
+            alpha_radio.checked = false;
+          }
+
           div.appendChild(label);
           div.appendChild(prob);
           div.appendChild(document.createElement("br"));
