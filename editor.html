@@ -222,21 +222,11 @@ function chosen(){
 
     let parent_div = document.getElementById("subtree-container");
 
-
-    let button = document.createElement("button");
-    button.innerHTML = "Calculate";
-    button.style = "border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgreen;color:white;"
-
-    // Add on click!
-    button.onclick = function (){
-      console.log("Clickclock!")
-    };
-
     let label = document.createElement("label");
     label.innerHTML =  "<br><h3>True/Random answers:</h3><br>"; 
 
     parent_div.appendChild(document.createElement("br"));
-    parent_div.appendChild(button);
+    //parent_div.appendChild(button);
     parent_div.appendChild(label);
     
     let questions = [root];
@@ -283,74 +273,102 @@ function chosen(){
           let prob = document.createElement("input");
           let a_label = document.createElement("label");
           let b_label = document.createElement("label");
+          let n_label = document.createElement("label");
           let alpha = document.createElement("input");
           let beta = document.createElement("input");
+          let n = document.createElement("input");
+          let n_unit = document.createElement("label");
           let a_unit = document.createElement("label");
           let b_unit = document.createElement("label");
           let alpha_radio_label = document.createElement("label");
           let beta_radio_label = document.createElement("label");
           let weight_radio_label = document.createElement("label");
+          let n_radio_label = document.createElement("label");
           let alpha_radio = document.createElement("input");
           let beta_radio = document.createElement("input");
           let weight_radio = document.createElement("input");
+          let n_radio = document.createElement("input");
           let radio_label = document.createElement("label");
           let radio_div = document.createElement("div");
 
           radio_div.style = "text-align:center;"
 
-          a_unit.innerHTML = " % ";
-          b_unit.innerHTML = " % ";
+          a_unit.innerHTML = " %, ";
+          b_unit.innerHTML = " %, ";
+          n_unit.innerHTML = " respondents ";
 
-          label.innerHTML = "<br>Pr[<b>"+answer+"</b>] = Pr[&not random] + Pr[<b>"+answer+"</b>| random],<br> Node weight = ";
+          label.innerHTML = "Alternative: <b>"+answer+"</b>,<br> Relative weight = ";
           prob.value = question['probability'][i];
           prob.placeholder = "n/d"
+          prob.id = "weight"+answer;
 
           alpha.type = "number";
           beta.type = "number";
           alpha.max = 99;
           alpha.min = 1;
+          alpha.id = "alpha"+answer;
           beta.max = 99;
           beta.value = 5;
           beta.min = 1;
+          beta.id = "beta"+answer;
+          n.type = "number";
+          n.min = 1;
+          n.value = 1000;
+          n.id = "n"+answer;
 
           beta.title = "Lower is better";
           alpha.title = "Lower is better";
           a_label.title = "Error is bounded by alpha";
           b_label.title = "Probability of bound not holding is beta";
+          n.title = "Population size";
           prob.title = "Fraction: n/d";
 
           a_label.innerHTML = "alpha =";
           b_label.innerHTML = "beta =";
+          n_label.innerHTML = "Population =";
           alpha_radio_label.innerHTML = "Alpha";
           beta_radio_label.innerHTML = "Beta";
           weight_radio_label.innerHTML = "Weight";
+          n_radio_label.innerHTML = "Population";
           radio_label.innerHTML = "<i>Choose parameter to calculate.</i>"
 
           alpha_radio.type="radio";
-          alpha_radio.id="alpha_radio";
+          alpha_radio.id="alpha_radio"+answer;
           alpha_radio.value="alpha";
           alpha_radio.checked = true;
           beta_radio.type="radio";
-          beta_radio.id = "beta_radio";
+          beta_radio.id = "beta_radio"+answer;
           beta_radio.value="beta";
           weight_radio.type="radio";
-          weight_radio.id = "weight_radio";
+          weight_radio.id = "weight_radio"+answer;
           weight_radio.value="weight";
+          n_radio.type="radio";
+          n_radio.id = "n_radio"+answer;
+          n_radio.value="n";
 
           alpha_radio.onchange = function () {
             beta_radio.checked = false;
             weight_radio.checked = false;
+            n_radio.checked = false;
           }
 
           beta_radio.onchange = function () {
             alpha_radio.checked = false;
             weight_radio.checked = false;
+            n_radio.checked = false;
           }
           
 
           weight_radio.onchange = function () {
             beta_radio.checked = false;
             alpha_radio.checked = false;
+            n_radio.checked = false;
+          }
+
+          n_radio.onchange = function () {
+            beta_radio.checked = false;
+            alpha_radio.checked = false;
+            weight_radio.checked = false;
           }
 
           div.appendChild(label);
@@ -362,6 +380,9 @@ function chosen(){
           div.appendChild(b_label);
           div.appendChild(beta);
           div.appendChild(b_unit);
+          div.appendChild(n_label);
+          div.appendChild(n);
+          div.appendChild(n_unit);
           div.appendChild(document.createElement("br"));
 
 
@@ -375,12 +396,60 @@ function chosen(){
           radio_div.appendChild(document.createElement("br"));
           radio_div.appendChild(beta_radio);
           radio_div.appendChild(beta_radio_label);
-          
-
-          
+          radio_div.appendChild(document.createElement("br"));
+          radio_div.appendChild(n_radio);
+          radio_div.appendChild(n_radio_label);
 
           sibling_div.appendChild(div);
           sibling_div.appendChild(radio_div);
+
+          let button = document.createElement("button");
+          button.innerHTML = "Calculate";
+          button.style = "border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgreen;color:white;"
+
+          // Add on click!
+          // Pr[|error| >= alpha] <= 2e^(-2 alpha^2 n)
+          // beta = 2e^(-2 alpha^2 n)
+          // alpha = sqrt(log(beta/2)/-2n)
+          // n = log(beta/2)/-2*alpha^2
+          button.onclick = function (){
+            console.log("Clickclock!")
+            let output = calculate(root);
+            let ans = answer;
+
+            if(question['answer_prefix']){
+              ans = question['answer_prefix']+answer;
+            }
+
+            // let notflipped = output['matrix'][ans][ans];
+            // let error = 1 - notflipped;
+            
+            // Set alpha
+            if(alpha_radio.checked){
+              let b = beta.value/100;
+              let pop = n.value;
+              let eq = math.sqrt(math.log(b/2)/(-2*pop))
+              alpha.value = eq*100;
+            } else if(beta_radio.checked){ // Set beta
+              let a = alpha.value/100;
+              let pop = n.value;
+              let eq = 2*math.pow(math.e, (-2*math.pow(a,2)*pop));
+              beta.value = eq*100;
+            } else if(weight_radio.checked){ // Set weight
+              console.log("Set weight");
+
+              
+            } else if(n_radio.checked){ // Set population
+              let a = alpha.value/100;
+              let b = beta.value/100;
+              let eq = math.log(b/2)/(-2*math.pow(a,2));
+              n.value = eq;
+            }
+            
+           };
+
+           sibling_div.appendChild(button);
+
           let line = document.createElement("label");
           line.innerHTML="<hr style=height:1px;width:45%;color:lightgray>";
           sibling_div.appendChild(line);
