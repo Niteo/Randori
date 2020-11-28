@@ -233,6 +233,7 @@ function chosen(){
     let coinflip = document.createElement("input");
     let ratio_label = document.createElement("label");
     let ep = document.createElement("label");
+    ep.id = "epsilon_label";
     coinflip.type = "range";
     coinflip.value = 50;
     coinflip.max = 99;
@@ -282,14 +283,13 @@ function chosen(){
           let b_unit = document.createElement("label");
           let alpha_radio_label = document.createElement("label");
           let beta_radio_label = document.createElement("label");
-          let weight_radio_label = document.createElement("label");
           let n_radio_label = document.createElement("label");
           let alpha_radio = document.createElement("input");
           let beta_radio = document.createElement("input");
-          let weight_radio = document.createElement("input");
           let n_radio = document.createElement("input");
           let radio_label = document.createElement("label");
           let radio_div = document.createElement("div");
+          let ans_ep = document.createElement("label");
 
           radio_div.style = "text-align:center;"
 
@@ -301,6 +301,7 @@ function chosen(){
           prob.value = question['probability'][i];
           prob.placeholder = "n/d"
           prob.id = "weight"+answer;
+          ans_ep.innerHTML = "<br>Alternative's epsilon: <br>";
 
           alpha.type = "number";
           beta.type = "number";
@@ -328,7 +329,6 @@ function chosen(){
           n_label.innerHTML = "Population =";
           alpha_radio_label.innerHTML = "Alpha";
           beta_radio_label.innerHTML = "Beta";
-          weight_radio_label.innerHTML = "Weight";
           n_radio_label.innerHTML = "Population";
           radio_label.innerHTML = "<i>Choose parameter to calculate.</i>"
 
@@ -339,40 +339,59 @@ function chosen(){
           beta_radio.type="radio";
           beta_radio.id = "beta_radio"+answer;
           beta_radio.value="beta";
-          weight_radio.type="radio";
-          weight_radio.id = "weight_radio"+answer;
-          weight_radio.value="weight";
           n_radio.type="radio";
           n_radio.id = "n_radio"+answer;
           n_radio.value="n";
 
+          let update = document.createElement("button");
+          update.innerHTML = "Update epsilon";
+          update.style = "border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgreen;color:white;"
+
+          update.onclick = function () {
+              let ans = answer;
+
+              if(question['answer_prefix']){
+                ans = question['answer_prefix']+answer;
+              }
+
+              // Update data structure
+              let index = question['answers'].indexOf(answer);
+              question['probability'][index] = math.fraction(prob.value);
+
+              // Recalculate transition matrix
+              let output = calculate(root);
+
+              // Calculate epsilon for this row
+              let p_a = output['matrix'][ans][ans];
+              let answers = Object.keys(output['matrix'][ans]).length;
+              let p_other = (1-p_a)/(answers-1);
+              let ep = math.max(p_a/p_other, p_other/p_a);;
+              ans_ep.innerHTML = "<br>Alternative's epsilon: "+ep+"<br>";
+
+              // Update subtree's epsilon
+              let label = document.getElementById("epsilon_label");
+              label.innerHTML = "<br><h3>Epsilon = ln("+output['epsilon']+") = "+ math.log(output['epsilon'])+"</h3>";
+          }
+
           alpha_radio.onchange = function () {
             beta_radio.checked = false;
-            weight_radio.checked = false;
             n_radio.checked = false;
           }
 
           beta_radio.onchange = function () {
             alpha_radio.checked = false;
-            weight_radio.checked = false;
             n_radio.checked = false;
           }
           
-
-          weight_radio.onchange = function () {
-            beta_radio.checked = false;
-            alpha_radio.checked = false;
-            n_radio.checked = false;
-          }
-
           n_radio.onchange = function () {
             beta_radio.checked = false;
             alpha_radio.checked = false;
-            weight_radio.checked = false;
           }
 
           div.appendChild(label);
           div.appendChild(prob);
+          div.appendChild(update);
+          div.appendChild(ans_ep);
           div.appendChild(document.createElement("br"));
           div.appendChild(a_label);
           div.appendChild(alpha);
@@ -388,8 +407,6 @@ function chosen(){
 
           radio_div.appendChild(radio_label);
           radio_div.appendChild(document.createElement("br"));
-          radio_div.appendChild(weight_radio);
-          radio_div.appendChild(weight_radio_label);
           radio_div.appendChild(document.createElement("br"));
           radio_div.appendChild(alpha_radio);
           radio_div.appendChild(alpha_radio_label);
@@ -407,13 +424,7 @@ function chosen(){
           button.innerHTML = "Calculate";
           button.style = "border-radius: 12px; border:none; padding: 7px 17px; background-color:lightgreen;color:white;"
 
-          // Add on click!
-          // Pr[|error| >= alpha] <= 2e^(-2 alpha^2 n)
-          // beta = 2e^(-2 alpha^2 n)
-          // alpha = sqrt(log(beta/2)/-2n)
-          // n = log(beta/2)/-2*alpha^2
           button.onclick = function (){
-            console.log("Clickclock!")
             let ans = answer;
 
             if(question['answer_prefix']){
@@ -438,10 +449,6 @@ function chosen(){
               let a = alpha.value/100;
 
               beta.value = calculateBeta(pop, a, ep)*100;
-            } else if(weight_radio.checked){ // Set weight
-              console.log("Set weight");
-
-
             } else if(n_radio.checked){ // Set population
               let a = alpha.value/100;
               let b = beta.value/100;
@@ -549,7 +556,6 @@ function calculateBeta(n, alpha, epsilon){
 
 function calculateAlpha(n, beta, epsilon){
   let lambd = calculateLambdaFromNBeta(n, beta);
-  console.log("Lambda is ", lambd);
   let alpha = (1+(math.exp(epsilon)))/(math.exp(epsilon)-1)*lambd;
   return alpha;
 }
