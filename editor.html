@@ -414,36 +414,39 @@ function chosen(){
           // n = log(beta/2)/-2*alpha^2
           button.onclick = function (){
             console.log("Clickclock!")
-            let output = calculate(root);
             let ans = answer;
 
             if(question['answer_prefix']){
               ans = question['answer_prefix']+answer;
             }
 
-            // let notflipped = output['matrix'][ans][ans];
-            // let error = 1 - notflipped;
+            let output = calculate(root);
+
+              let p_a = output['matrix'][ans][ans];
+              let answers = Object.keys(output['matrix'][ans]).length;
+              let p_other = (1-p_a)/(answers-1);
+              let ep = math.max(p_a/p_other, p_other/p_a);
             
             // Set alpha
             if(alpha_radio.checked){
-              let b = beta.value/100;
               let pop = n.value;
-              let eq = math.sqrt(math.log(b/2)/(-2*pop))
-              alpha.value = eq*100;
+              let b = beta.value/100; //% -> prob
+
+              alpha.value = calculateAlpha(pop, b, ep)*100;
             } else if(beta_radio.checked){ // Set beta
-              let a = alpha.value/100;
               let pop = n.value;
-              let eq = 2*math.pow(math.e, (-2*math.pow(a,2)*pop));
-              beta.value = eq*100;
+              let a = alpha.value/100;
+
+              beta.value = calculateBeta(pop, a, ep)*100;
             } else if(weight_radio.checked){ // Set weight
               console.log("Set weight");
 
-              
+
             } else if(n_radio.checked){ // Set population
               let a = alpha.value/100;
               let b = beta.value/100;
-              let eq = math.log(b/2)/(-2*math.pow(a,2));
-              n.value = eq;
+
+              n.value = calculateN(a, b, ep);
             }
             
            };
@@ -528,6 +531,39 @@ function calculate(start){
   return getTransitionMatrix(a);
 }
 
+function calculateLambdaFromNBeta(n, beta){
+  let lambd = math.sqrt(math.log(2/beta)/(2*n));
+  return lambd;
+}
+
+function calculateLambdaFromAlphaEpsilon(alpha, epsilon) {
+  let lambd = alpha/(1+(math.exp(epsilon)))/(math.exp(epsilon)-1);
+  return lambd;
+}
+
+function calculateBeta(n, alpha, epsilon){
+  let c = (1.+math.exp(epsilon))/(math.exp(epsilon)-1);
+  let beta = 2*math.exp(-2*math.pow(alpha/c,2)*n);
+  return beta;
+}
+
+function calculateAlpha(n, beta, epsilon){
+  let lambd = calculateLambdaFromNBeta(n, beta);
+  console.log("Lambda is ", lambd);
+  let alpha = (1+(math.exp(epsilon)))/(math.exp(epsilon)-1)*lambd;
+  return alpha;
+}
+
+function calculateEpsilon(n, alpha, beta){
+  let lambd = calculateLambdaFromNBeta(n, beta);
+  let epsilon = math.log(((-alpha/lambd)-1)/(1-(alpha/lambd)));
+  return epsilon;
+}
+function calculateN(alpha, beta, epsilon){
+  let top = math.pow(1+math.exp(epsilon), 2) * math.log(2/beta);
+  let bottom = 2*math.pow(alpha, 2)*math.pow((math.exp(epsilon)-1), 2);
+  return top/bottom;
+}
 
 function getTransitionMatrix(ordered){
   let output = {};
