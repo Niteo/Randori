@@ -356,17 +356,20 @@ function chosen(){
 
               // Update data structure
               let index = question['answers'].indexOf(answer);
-              question['probability'][index] = math.fraction(prob.value);
+              question['probability'][index] = prob.value;
+
+              console.log(question);
 
               // Recalculate transition matrix
               let output = calculate(root);
 
-              // Calculate epsilon for this row
-              let p_a = output['matrix'][ans][ans];
-              let answers = Object.keys(output['matrix'][ans]).length;
-              let p_other = (1-p_a)/(answers-1);
-              let ep = math.max(p_a/p_other, p_other/p_a);;
-              ans_ep.innerHTML = "<br>Alternative's epsilon: "+ep+"<br>";
+              // // Calculate epsilon for this row
+              // let p_a = output['matrix'][ans][ans];
+              // let siblings = Object.keys(output['matrix'][ans]).length-1;
+              // let not_p_a = 1-p_a;
+              // let p_other = not_p_a/siblings;
+              // let ep = math.max(p_a/p_other, p_other/p_a);
+              // ans_ep.innerHTML = "<br>Alternative's epsilon: ln("+ep+") = "+math.log(ep)+"<br>";
 
               // Update subtree's epsilon
               let label = document.getElementById("epsilon_label");
@@ -579,10 +582,12 @@ function getTransitionMatrix(ordered){
   let potential_epsilon = undefined;
   let valid_answers = {};
   let ans_to_compound = {};
+  let row_epsilons = {};
+  let siblings = 0;
     
   ordered.forEach(function (question, i) {
 
-    if(i==0 && ordered.length>1){
+    if(i==0 && ordered.length==1){
       root_index = question["qid"];
       valid_answers[root_index]=question["answers"];
     } else{
@@ -603,7 +608,10 @@ function getTransitionMatrix(ordered){
 
         ans_to_compound[question["qid"]] = {};
         temp_answers.forEach(function (ans) {
-          let name = question["answer_prefix"]+ans;
+          let name = ans;
+          if(question['answer_prefix']){
+            name = question["answer_prefix"]+ans;
+          }
           to_use.push(name);
 
           ans_to_compound[question["qid"]][ans] = name;
@@ -615,63 +623,71 @@ function getTransitionMatrix(ordered){
 
     });
 
-    // For each input, create a transition to each output
-    Object.keys(valid_answers).forEach(function (qid){
-      valid_answers[qid].forEach(function (self){
+  // Flatten to leaves, and map to qid
+  let output_space = [];
+  let qid_order = [];
+  Object.keys(valid_answers).forEach(function (qid){
+    siblings += valid_answers[qid].length;
+    output_space = output_space.concat(valid_answers[qid]);
 
-        // Find min/max per row
-        let max = undefined;
-        let min = undefined;
+    for(i in valid_answers[qid]){
+      qid_order.push(qid);
+    }
+    
+  });
+  
+  // For each input, create a transition to each output
+  output_space.forEach(function (self, i){
+    // Find min/max per row
+    let max = undefined;
+    let min = undefined;
 
-        matrix[self] = {};
+    matrix[self] = {};
 
-          Object.keys(valid_answers).forEach(function (compare_qid) {
-            valid_answers[compare_qid].forEach(function (compare_alt){
-              let target_question = lookup[compare_qid];
+    let qid = qid_order[i];
+    let q_self = lookup[qid];
+    let index = q_self['answers'].indexOf(self);
+    let truth = math.Fraction(lookup[root_index]["truth"]);
+    let random = 1-(truth);
 
-              let truth = math.Fraction(lookup[root_index]["truth"]);
-              // Probability of RANDOM answer
-              let random = math.Fraction(1).sub(truth);
+    let p_a = undefined;
+    // Probability of randomly picking self
+    if(q_self['compound_probability']){
+      // Values are all the same, pick any
+      let key = q_self['compound_answers'][0];
+      p_a = q_self['compound_probability'][key]*random;
+    } else {
+      p_a = math.fraction(q_self['probability'][index])*random;
+    }
 
-              let prob = undefined;
-              if(target_question["compound_probability"]){
-                prob = target_question["compound_probability"][compare_alt].mul(random);
-              } else{
-                let i = target_question["answers"].indexOf(compare_alt);
-                let frac = math.Fraction(target_question["probability"][i]);
-                prob = frac.mul(random);
-              }
-               
+    // Add probability of telling truth
+    p_a = p_a+truth;
 
-              // Higher probability of not changing answer (self->self)
-              if(self == compare_alt){
-                prob = prob.add(truth);                  
+    // Uniform probability for rest
+    // p_other = 1-p_a / |siblings|
+    let not_p_a = 1-p_a;
+    let p_other = not_p_a/(siblings-1);
 
-              }
-
-              // Initialize first loop
-              if(max==undefined && min==undefined){
-                max = prob;
-                min = prob;
-              } else if(prob > max){
-                max = prob;
-              } else if(prob < min){
-                min = prob;
-              }
-
-              matrix[self][compare_alt] = prob; 
-            });
-          });
-
-          let check = Math.max(max.div(min), min.div(max));
-          if(potential_epsilon==undefined || potential_epsilon<check){
-            potential_epsilon = check;
-          }
-      });
+    // Populate others
+    output_space.forEach(function (compare_alt) {
+        matrix[self][compare_alt] = p_other; 
     });
+
+
+    // Overwrite self
+    matrix[self][self] = p_a;
+
+    let row_ep = math.max(p_a/p_other, p_other/p_a);
+    row_epsilons[self] = row_ep;
+
+    if(potential_epsilon==undefined || potential_epsilon<row_ep){
+      potential_epsilon = row_ep;
+    }
+  });
 
   output['matrix'] = matrix;
   output['epsilon'] = potential_epsilon;
+  output['row_epsilons'] = row_epsilons;
   return output;
 }
 
