@@ -224,14 +224,18 @@ def parsePoll(json_poll):
         chosen_epsilon = 0
         for _from in path_prob.keys():
             column_keys = []
+            siblings = len(path_prob.keys())
+            p_a = (1-coinflip)*path_prob[_from] + coinflip #Random + truth
+            p_other = (1-p_a)/(siblings-1)
+            
             for _to in path_prob.keys():
                 key = (_from, _to)
                 column_keys.append(key)
                 # Higher likelihood to stay on same value
                 if _from == _to:
-                    matrix[key] = (1-coinflip)*path_prob[_to] + coinflip #Random + truth
+                    matrix[key] = p_a #Random + truth
                 else:
-                    matrix[key]= (1-coinflip)*path_prob[_to] #Only random
+                    matrix[key]= p_other #Only random
 
             cases = []
             for key in column_keys:
