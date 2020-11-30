@@ -205,7 +205,6 @@ def parsePoll(json_poll):
     
     #Construct transition matrix
     transition_matrix_subtree = {}
-    epsilons = {}
     path_probs = {}
     
     for tree in answer_prob.keys():
@@ -221,7 +220,6 @@ def parsePoll(json_poll):
         path_probs[tree] = path_prob
 
         matrix = {}
-        chosen_epsilon = 0
         for _from in path_prob.keys():
             column_keys = []
             siblings = len(path_prob.keys())
@@ -243,15 +241,9 @@ def parsePoll(json_poll):
 
             assert sum(cases)==1
 
-            candidate_epsilon=  max(np.divide(min(cases),max(cases)), np.divide(max(cases),min(cases)))
-            if candidate_epsilon>chosen_epsilon:
-                chosen_epsilon=candidate_epsilon
-
-        epsilons[tree] = chosen_epsilon
         transition_matrix_subtree[tree] = matrix
     
     return {'matrices':transition_matrix_subtree,
-            'epsilons':epsilons,
             'subtrees':subtrees,
             'paths':question_paths,
             'weighted_paths':path_probs,
