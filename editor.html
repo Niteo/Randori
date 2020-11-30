@@ -579,7 +579,6 @@ function getTransitionMatrix(ordered){
 
   let matrix = {};
   let root_index = ordered[0]['qid'];
-  let potential_epsilon = undefined;
   let valid_answers = {};
   let ans_to_compound = {};
   let row_epsilons = {};
@@ -677,18 +676,34 @@ function getTransitionMatrix(ordered){
     // Overwrite self
     matrix[self][self] = p_a;
 
-    let row_ep = math.max(p_a/p_other, p_other/p_a);
-    row_epsilons[self] = row_ep;
-
-    if(potential_epsilon==undefined || potential_epsilon<row_ep){
-      potential_epsilon = row_ep;
-    }
   });
 
   output['matrix'] = matrix;
-  output['epsilon'] = potential_epsilon;
-  output['row_epsilons'] = row_epsilons;
+  output['epsilon'] = matrixToEpsilon(matrix);
   return output;
+}
+
+function matrixToEpsilon(matrix){
+  let epsilon = 0;
+
+  for(self in matrix){
+    let probs = [];
+
+    for(key in matrix){
+      probs.push(matrix[key][self]);
+    }
+    let column_max = math.max(probs);
+    let column_min = math.min(probs);
+
+    let candidate = math.max(column_min/column_max, column_max/column_min);
+
+    if(candidate > epsilon){
+      epsilon = candidate;
+    }
+  }
+
+  return epsilon;
+
 }
 
 function toJSON(){

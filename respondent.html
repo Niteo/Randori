@@ -66,8 +66,6 @@ fetch('/poll')
     main();
   });
 
-
-
 // Traverse and decorate JSON
 function recurse(qid, order) {
   paths.forEach(function(d, i){
@@ -340,7 +338,6 @@ function pollToMatrix(){
 
     let matrix = {};
     let root_index;
-    let potential_epsilon = undefined;
     let valid_answers = {};
     let siblings = 0;
 
@@ -436,21 +433,36 @@ function pollToMatrix(){
 
     // Overwrite self
     matrix[self][self] = p_a;
-
-    let row_ep = math.max(p_a/p_other, p_other/p_a);
-
-    if(potential_epsilon==undefined || potential_epsilon<row_ep){
-      potential_epsilon = row_ep;
-    }
   });
 
   output[root_index]=matrix;
-
-  epsilon_per_subtree[subtree[0]["qid"]] = potential_epsilon;
-
+  epsilon_per_subtree[subtree[0]["qid"]] = matrixToEpsilon(matrix);
 
   });
   return output;
+}
+
+function matrixToEpsilon(matrix){
+  let epsilon = 0;
+
+  for(self in matrix){
+    let probs = [];
+
+    for(key in matrix){
+      probs.push(matrix[key][self]);
+    }
+    let column_max = math.max(probs);
+    let column_min = math.min(probs);
+
+    let candidate = math.max(column_min/column_max, column_max/column_min);
+
+    if(candidate > epsilon){
+      epsilon = candidate;
+    }
+  }
+
+  return epsilon;
+
 }
 
 
@@ -461,7 +473,6 @@ function randomMatrix(){
 
     let matrix = {};
     let root_index;
-    let potential_epsilon = undefined;
     let valid_answers = {};
     let is_flat = false;
     let siblings = 0;
