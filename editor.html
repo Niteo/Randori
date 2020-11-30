@@ -435,11 +435,8 @@ function chosen(){
             }
 
             let output = calculate(root);
-
-              let p_a = output['matrix'][ans][ans];
-              let answers = Object.keys(output['matrix'][ans]).length;
-              let p_other = (1-p_a)/(answers-1);
-              let ep = math.max(p_a/p_other, p_other/p_a);
+            let m = output['matrix'];
+            let ep = columnEpsilon(m, ans)
             
             // Set alpha
             if(alpha_radio.checked){
@@ -701,6 +698,23 @@ function matrixToEpsilon(matrix){
       epsilon = candidate;
     }
   }
+
+  return epsilon;
+
+}
+
+function columnEpsilon(matrix, self){
+  let epsilon = 0;
+
+  let probs = [];
+
+  for(key in matrix){
+    probs.push(matrix[key][self]);
+  }
+  let column_max = math.max(probs);
+  let column_min = math.min(probs);
+
+  epsilon = math.max(column_min/column_max, column_max/column_min);
 
   return epsilon;
 
